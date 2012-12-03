@@ -1,0 +1,91 @@
+An_Orcish_Incursion.tar.bz2
+Dead_Water.tar.bz2
+Delfadors_Memoirs.tar.bz2
+Descent_Into_Darkness.tar.bz2
+Eastern_Invasion.tar.bz2
+Heir_To_The_Throne.tar.bz2
+Legend_of_Wesmere.tar.bz2
+Liberty.tar.bz2
+Northern_Rebirth.tar.bz2
+Orcish_Incursion.tar.bz2
+Sceptre_of_Fire.tar.bz2
+Son_Of_The_Black_Eye.tar.bz2
+The_Hammer_of_Thursagan.tar.bz2
+The_Rise_of_Wesnoth.tar.bz2
+The_Rise_Of_Wesnoth.tar.bz2
+The_South_Guard.tar.bz2
+Two_Brothers.tar.bz2
+Under_the_Burning_Suns.tar.bz2
+
+#href="Clonkinator's_German_RPG.tar.bz2   #variation -> Clonkinator's_RPG
+#href="Forest_Of_Fear.tar.bz2   #renamed -> Assassin_in_the_Forest (FoF also a map-name in Ruins_of_the_Ancients map-pack, but described as 5p)
+#href="The_North_Wind.tar.bz2   #variation -> North_Wind
+
+maps_by_roze.tgz   #renamed -> Rozes_Maps
+Revenge.tgz   #capitalization -> revenge
+dev/Modular_MP_RPG.tgz   #variation -> Modular_RPG
+dev/Rise.tgz   #renamed -> Bad_Moon_Rising
+
+1.0/Clonkinator's_German_RPG.tar.bz2   #variation -> Clonkinator's_RPG
+1.0/Forest_Of_Fear.tar.bz2   #renamed -> Assassin_in_the_Forest (FoF is also the name of a 5p map in standard multiplayer)
+1.0/MP_Campaigns.tar.bz2   #renamed -> Unnatural_Winter
+1.0/Path_of_Summoners_MP_era.tar.bz2   #variation -> Path_of_Summoners_Era
+1.0/The_North_Wind.tar.bz2   #variation -> North_Wind
+
+1.2/2vs2Survival.tar.bz2   #consolidation -> Nosmos_SurvivalPack
+1.2/3pSurvival.tar.bz2   #consolidation -> Nosmos_SurvivalPack
+1.2/Descent.tar.bz2   #mainlined -> Descent_Into_Darkness
+1.2/Flight_Freedom_1_x.tar.bz2   #variation -> Flight_Freedom
+1.2/Orocia_RandomMod.tar.bz2   #variation -> OrociaRandomMod
+1.2/RedMoonKs_MP_Maps.tar.bz2   #renamed -> Red_MP_Maps
+1.2/The_undead_of_light.tar.bz2   #capitalization -> The_Undead_of_Light
+
+1.4/Brotherhood_Of_Light.tar.bz2   #capitalization -> Brotherhood_of_Light
+1.4/Flight_Freedom_1_3.tar.bz2   #variation -> Flight_Freedom
+1.4/3p_island_survival.tar.bz2   #included -> Augu_Ports
+1.4/KTV.tar.bz2   #consolidation -> Skele_Survivals
+1.4/Orbivm_Imperial_Era.tar.bz2   #variation -> Imperial_Era
+1.4/Orocia_RandomMod14.tar.bz2   #variation -> OrociaRandomMod
+1.4/Outbreak.tar.bz2   #included -> Augu_Ports
+1.4/Prison_Break.tar.bz2   #consolidation -> Skele_Survivals
+
+1.4/RedMoonKs_MP_Maps.tar.bz2   #renamed -> Red_MP_Maps
+1.4/SurvivalXAddOnMap.tar.bz2   #consolidation -> SurvivalXAddOnPacks
+1.4/SurvivalXAddOnMaps.tar.bz2   #consolidation -> SurvivalXAddOnPacks
+1.4/The_Life_Of_A_Mage.tar.bz2   #renamed -> Tale_of_a_Mage
+1.4/THoB.tar.bz2   #renamed -> The_History_of_Burin
+1.4/Xuan.tar.bz2   #variation -> Xuan_map_pack
+
+## As far as I know, 1.4/Deathmatch.tar.bz2 is not related to 1.8/deathmatch and 1.9/deathmatch_new, and so is not excluded here.
+
+1.5/Flight_Freedom_1_5.tar.bz2   #variation -> Flight_Freedom
+1.5/Fly_From_Fighting.tar.bz2   #renamed -> Up_From_Slavery
+
+1.6/Beach_Resort_Survival.tar.bz2   #included -> Augu_Ports
+1.6/Dwarven_Kingdom.tar.bz2   #renamed -> The_Earths_Gut
+1.6/Flight_Freedom_1_5.tar.bz2   #variation -> Flight_Freedom
+1.6/Grafted_era.tar.bz2   #capitalization -> Era
+1.6/new_ship_macro.tar.bz2   #variation -> ship_macro
+1.6/Orocia_RandomMod14.tar.bz2   #variation -> OrociaRandomMod
+1.6/Royal_Rumble.tar.bz2   #variation -> Royal_Rumble_Updated
+
+1.6/The_Shadow_of_the_Moon.tar.bz2   #renamed -> Rhugastans_Bridge
+
+1.7/Grafted_era.tar.bz2   #capitalization -> Era
+
+1.8/deathmatch.tar.bz2   #variation -> deathmatch_new
+1.8/Dwarven_Kingdom.tar.bz2   #renamed -> The_Earths_Gut
+1.8/Orocia_RandomMod14TMP.tar.bz2   #variation -> OrociaRandomMod
+1.8/Royal_RumbleTMP.tar.bz2   #variation -> Royal_Rumble_Updated
+
+1.8/A_story_about_a_theif.tar.bz2   #renamed -> Legendary_Red_Mao_Thief
+1.8/classic_era.tar.bz2   #capitalization -> Classic
+1.8/Paintball_era.tar.bz2   #capitalization -> Era
+1.8/The_Altaz_Mariners_Demo.tar.bz2   #variation -> The_Altaz_Mariners
+1.8/the_mystic_age.tar.bz2   #capitalization -> The_Mystic_Age
+
+1.9/Chess.tar.bz2   ##This is a cheat; 1.6/Chess doesn't seem to be the same add-on as 1.9, so excluding 1.9 keeps 1.6 from being counted as unported.
+1.9/The Fall of Wesnoth.tar.bz2   #variation -> The_Fall_of_Wesnoth
+1.9/The_Fall_of_Wesnoth.tar.bz2   ##This is a cheat; 1.6/The_Fall_of_Wesnoth doesn't seem to be the same campaign as 1.9, so excluding 1.9 keeps 1.6 from being counted as unported.
+
+1.9/Waterwolf_Valley_map.tar.bz2   #renamed -> Milites.pl_Maps
