@@ -1,5 +1,6 @@
-## If you would like to make up your own list of unported add-ons, here is my recipe:
-## NOTE: This code works currently. Once 1.9 is incremented to 1.10, and future versions come out, there may be spots that assume a single digit [0-9] that will need a + operator, or a sort that will need a -v parameter.
+## If you would like to make up your own list of unported add-ons, here is the script I follow:
+
+## NOTE: This code works currently. Once 1.9 is incremented to 1.10, and future versions come out, there may be spots that assume a single digit [0-9] that will need a + operator, or a sort that will need a -V parameter.
 
 ## First, download the add-on lists. (I reject PNG files, as a courtesy to save the project's bandwidth. The icons are not necessary for our purposes, plus some authors use portraits for their add-on's icon. Although they appear icon-sized in the browser, the entire portrait is actually downloaded.)
 
@@ -15,21 +16,31 @@ mkdir addons.wesnoth.org/1.0
 sed 's;href=\";&http://files.wesnoth.org/addons/1.0/;' files.wesnoth.org/addons/1.0/index.html >addons.wesnoth.org/1.0/index.html
 
 ## We will also need a list of the mainline campaigns, to exclude add-ons that were later promoted. I've included this list in a file called "mainline", but if you'd like to roll your own, uncomment the command line below.
+
 ## YOU WILL HAVE TO REPLACE "%WESNOTHPATH" WITH THE PATH ON YOUR SYSTEM. It differs depending on your operating system and Wesnoth version.
 
 #ls "%WESNOTHPATH/data/campaigns" | grep -v tutorial | sed 's/$/.tar.bz2/' | sed 's/Orcish_Incursion.*/&\n&/' | sed 's/\(.*Rise_\)O\(f.*\)/\1o\2\n&/' | sed 's;^;/;' | sort >mainline
 
 ## You will also have to compile a list of renamed add-ons to exclude. I've simply put them in the "mainline" file above. If you want to create your own list as a separate file, you'll have to change the commands that call on the "mainline" file to include your file.
 
+## I am now looking not just for unported add-ons, but "lost" UMC - add-ons that are no longer on the add-ons server, though some of them are still available on the forum or elsewhere. These commands aren't complete. Full instructions later.
+
+wget -x http://wayback.archive.org/web/*/http://addons.wesnoth.org*
+wget -x http://wayback.archive.org/web/*/http://add-ons.wesnoth.org*
+wget -x http://wayback.archive.org/web/*/http://campaigns.wesnoth.org*
+wget -x http://wayback.archive.org/web/*/http://wesnoth.org/add*
+wget -x http://wayback.archive.org/web/*/http://wolff.to/campaigns*
+
 ## This command:
 ## a) creates a version of each index page in which each table row is on a single line (*table.html), so grep and sed and other line-based commands can work (also includes a fix so size sort will work properly on 1.2-1.5)
 ## b) creates a list of each directory's add-ons (*list), first excluding promoted and renamed add-ons, which will be compared to find which add-ons have not been ported
+## c) creates a list that will be used to find add-ons that have been removed (*listbig)
 
 for WES in $(find addons.wesnoth.org/* -type d | grep -v icons) ; do 
 NUM=$(echo "$WES" | sed 's;.*/;;g' | sed 's/\.//g') ;
 cat $WES/index.html | tr \\n \\v | sed 's/\v<tr/\n<tr/g' | sed 's;\v</tbody>;\n</tbody>;g' | sed 's;\v<table;\n<table;g' | sed 's/\([0-9.]\+\)\(Mi\?B\)/<b>\1<\/b>\2/' >"$NUM"table.html ; 
 grep -o "[^/>]*tar.bz2" $WES/index.html | sort -u >"$NUM"list ; 
-grep -ho "[^/>]*tar.bz2" $WES/* | sort -u >"$NUM"listbig ; done
+find $WES/* web.archive.org -path "*$(echo "$WES" | sed 's;.*/;;g')*" -exec grep -o "[^/>]*tar.bz2" {} \; | sed 's/%20/ /g' | sort -u >"$NUM"listbig ; done
 
 ## The *table.html files (as well as the files we will be creating later) still rely on .js and .css files for their formatting.
 
@@ -37,23 +48,13 @@ cp -p addons.wesnoth.org/1.9/*.[jc]* .
 
 ## I like to change the stylesheet so that you don't have to hover over the description to see it, but that's an individual taste, and I won't offer any commands to change it.
 
-## This section is commented out because it depends on the user having downloaded some of the 1.0 add-ons, and having unpacked them in a specific directory. It takes data from downloaded 1.0 add-ons, and converts the 1.0 directory listing to follow the format of the other *table.html files for those add-ons. It drops the Traffic column, as that information isn't offered; I decided to keep Date, even though it is not actually when they were originally uploaded. Although Author: information is also unfortunately not given, information about authorship of some of the add-ons can be recreated from archive.org's Wayback Machine crawls of the old wolff.to server. 
+#### UNPORTED SECTION ####
 
-#for W10 in $(find files.wesnoth.org/addons/1.0/*.cfg | sed 's/.cfg$//') ; do 
-ICON=$(grep "icon=" $W10.cfg | sed 's/.*icon="\?\([^"]*\).*/\1/' | sed 's/\r//g' ) ;
-DESC=$(cat $W10.cfg | tr \\n \\v | sed 's/\r\v/\v/g' | tr \\r \\v | sed 's/"[ \t]*\v/"\n/g' | grep -o "description=[\" _]\+.*" | sed 's/"$//' | sed 's/.*description=[\" _]\+//' | sed 's/ \?" +[ _]\+" \?/ /g') ; 
-NAME=$(sed -n "/\[campaign\]/,/name=/p" $W10.cfg | grep "name=" | sed 's/.*name=[\" _]\+//' | sed 's/"[ \t\r]*$//') ; 
-NAMEX=$(echo "$W10" |sed 's;.*1.0/;;' | sed 's/_/ /g') ; 
-SIZE=$(grep "$W10.tar" 10table.html | sed 's/.*> \?\([0-9.]\+[KM]\)<.*/\1/') ; 
-VERS=$(grep -i "^[^#]*version" $W10.cfg | sed 's/.*[Vv]ersion[^0-9]*\([0-9.]*\).*/\1/' ) ; 
-AUTH=$(grep -m 1 "$(echo "$W10" | sed 's/^.*1.0//' | sed 's/$/.tgz/')" w10.html | sed 's;.*<td>\([^<]*\)</td> <td>[^>]* 200[4-6] GMT</td>.*;\1;') ; 
-echo -e "<tr>\v<td><img alt=\"$ICON\" src=\"icons/$(echo $ICON | sed 's;^.*/;;')\" width=\"72px\" height=\"72px\"/>\v<div class=\"desc\"><b>$NAME</b><br/>$DESC(no description)</div></td>\v<td><b>$NAME</b><br/>\vVersion: $VERS<br/>\vAuthor: $AUTH</td>\v<td>$SIZE <br/><a href=\"http://$W10.tar.bz2\">download</a></td>\v<td>Feb 28 2009</td>\v<td></td>\v</tr>" | sed 's/\([^>]\)(no description)/\1/' | sed 's;\(<br/>\vVersion: \)\(<\);\1unknown\2;' | sed 's/"icons\/"/""/' | sed "s;<b></b><br/>;<b>$NAMEX</b><br/>;g" | sed '/Heiress_To_The_Throne/ s/Author: /&Rusty steals from HTTT/' | sed 's/Author: </Author: [?]</' | sed 's/Author: -/Author: Mkgego/' >>10read ; done
-
-#ls files.wesnoth.org/addons/1.0/*.cfg | sed 's;.*/1.0\(.*\)\.cfg$;\\@\1.tar.bz2@d;' | sed \$\ 'a\s@</h1>@</h1>\\n<table class="tablesorter" id="campaigns">\\v<thead>\\n<tr>\\v<th>Icon\\&nbsp;\\&nbsp;\\&nbsp;</th>\\v<th>Addon\\&nbsp;\\&nbsp;\\&nbsp;</th>\\v<th>Size\\&nbsp;\\&nbsp;\\&nbsp;</th>\\v<th>Date\\&nbsp;\\&nbsp;\\&nbsp;</th>\\v<th>Notes\\&nbsp;\\&nbsp;\\&nbsp;</th>\\v</tr>\\v</thead>\\v<tbody>\\v@' | sed \$\ "a\/<h1>/r 10read" | sed \$\ 'a\/Last modified/ i\</tbody>\\v</table>\\v' | sed \$\ 'a\s@</head>@\\v<link rel=stylesheet href="style.css" type="text/css">\\v<script type="text/javascript" src="jquery.js"></script>\\v<script type="text/javascript" src="tablesorter.js"></script>\\v<script type="text/javascript">\\v$(document).ready(function() \\v{ \\v    $("#campaigns").tablesorter(\\v    {\\v        headers: { 1: { sorter: false} }\\v    }\\v    ); \\v} \\v); \\v</script>\\v&@' | sed -f - -i.bak 10table.html
+## This is where we create list of unported add-ons.
 
 ## I like to combine trunk with 1.9 into a single list. At this time, I'm also excluding a few add-ons from the list.
 
-EXC=$(grep ^"1.9" mainline | sed 's/^1.9\/\([^#]*bz2\).*/\1/') ; cat 19list trunklist | sort -u |grep -v "$EXC" >newlist
+EXC=$(grep ^"1.9" mainline | sed 's/^1.9\/\([^#]*bz2\).*/\1/') ; cat 19list 111list trunklist | sort -u |grep -v "$EXC" >newlist
 
 ## Now these lists can be compared to create lists of add-ons not ported to 1.9/10.
 
@@ -68,6 +69,92 @@ grep ^"[A-Z]\|1.0" mainline | sed 's/^1.0\/\([^#]*bz2\).*/\1/' | cat - 1[24568]l
 
 cat *unport newlist | tr [:upper:] [:lower:] | sort | uniq -d >uncap
 
+#### WOLFF SECTION (comments coming) ####
+
+## In this section, we parse the Wayback Machine (archive.org) crawls of the old wolff.to server, to find early add-ons that aren't on Wesnoth's UMC server today.
+
+# A number of the wolff hits are error pages, about 13K in length, so a size test gets rid of them
+# I want to get rid of the archive.org part of the URL, to return the links to their original state
+# The date format will not sort properly, so I create a preceding HTML comment with the date in sortable format (similar to how the addons.wesnoth.org lists use <span class="hidden"> to sort the date)
+
+find web.archive.org -path "*wolff*" -size +15k -exec sed -e 's/<tr>/\n&/g' -e 's;</tr>;&\n;g' {} \; | grep "\.tgz" | sed 's/http[^>]*\/http/http/g' | sort -u | sed -e 's;</a>;&\v;' -e 's/[^>]*\([JFMASOND][a-z][a-z] [1-3 ][0-9] [0-2][0-9]:[0-5][0-9]:[0-5][0-9]\) \(200[3-9]\) GMT/\v<!-- \2 \1 -->&/' |  sed -e 's/\(-- 200[3-9]\) Jan/\1-01/' -e 's/\(-- 200[3-9]\) Feb/\1-02/' -e 's/\(-- 200[3-9]\) Mar/\1-03/' -e 's/\(-- 200[3-9]\) Apr/\1-04/' -e 's/\(-- 200[3-9]\) May/\1-05/' -e 's/\(-- 200[3-9]\) Jun/\1-06/' -e 's/\(-- 200[3-9]\) Jul/\1-07/' -e 's/\(-- 200[3-9]\) Aug/\1-08/' -e 's/\(-- 200[3-9]\) Sep/\1-09/' -e 's/\(-- 200[3-9]\) Oct/\1-10/' -e 's/\(-- 200[3-9]\) Nov/\1-11/' -e 's/\(-- 200[3-9]\) Dec/\1-12/' | sort -t \v -k 3r -k 1 -V | sed 's/\v//g' >wblob
+
+# Get rid of multiple entries for each upload time, except the one with the most downloads.
+
+for CULL in $(sed 's;.*\(href.*</a>\).*>\(<!-- 200[3-9]-[^>]*\).*;\1.*\2;' wblob | sort -u | sed 's/ /SPACE/g') ; do echo "$CULL" |sed -e 's/SPACE/ /g' -e 's/"/\\"/g' -e 's/.*/grep -m 1 "&" wblob/e' >>wcull ; done
+
+grep "<td>1.3.x" wcull| sed -e '1i\<html>\n<script type="text/javascript" src="jquery.js"></script>\n<script type="text/javascript" src="tablesorter.js"></script>\n<script type="text/javascript">\n$(document).ready(function() \n{ \n    $("#w13").tablesorter(\n    {\n        headers: { 1: { sorter: false} }\n    }\n    ); \n} \n); \n</script>\n<table class="tablesorter" id="w13" frame="border" rules="all">\n<thead><tr><th>Wesnoth Release</th> <th>Title</th> <th>Version</th> <th>Translations</th> <th>Author</th> <th>Last Updated</th> <th>Description</th> <th>Size</th> <th>Downloads</th></tr></thead>' -e \$\ 'a\</table>\n</html>' >w13.html
+
+grep "<td>1.2.x" wcull| sed -e '1i\<html>\n<script type="text/javascript" src="jquery.js"></script>\n<script type="text/javascript" src="tablesorter.js"></script>\n<script type="text/javascript">\n$(document).ready(function() \n{ \n    $("#w12").tablesorter(\n    {\n        headers: { 1: { sorter: false} }\n    }\n    ); \n} \n); \n</script>\n<table class="tablesorter" id="w12" frame="border" rules="all">\n<thead><tr><th>Wesnoth Release</th> <th>Title</th> <th>Version</th> <th>Translations</th> <th>Author</th> <th>Last Updated</th> <th>Description</th> <th>Size</th> <th>Downloads</th></tr></thead>' -e \$\ 'a\</table>\n</html>' >w12.html
+
+grep -v "<td>1.[23].x" wcull | grep "/dev/.*tgz" | sed -e '1i\<html>\n<script type="text/javascript" src="jquery.js"></script>\n<script type="text/javascript" src="tablesorter.js"></script>\n<script type="text/javascript">\n$(document).ready(function() \n{ \n    $("#w11").tablesorter(\n    {\n        headers: { 1: { sorter: false} }\n    }\n    ); \n} \n); \n</script>\n<table class="tablesorter" id="w11" frame="border" rules="all">\n<thead><tr><th>Title</th> <th>Version</th> <th>Translations</th> <th>Author</th> <th>Last Updated</th> <th>Description</th> <th>Size</th> <th>Downloads</th></tr></thead>' -e \$\ 'a\</table>\n</html>' >w11.html
+
+grep -v "<td>1.[23].x" wcull | grep -v "/dev/.*tgz" | grep tgz | sed 's/\(<tr>\)\(<td><a href\)/\1<td><\/td>\2/' | sed -e '1i\<html>\n<script type="text/javascript" src="jquery.js"></script>\n<script type="text/javascript" src="tablesorter.js"></script>\n<script type="text/javascript">\n$(document).ready(function() \n{ \n    $("#w10").tablesorter(\n    {\n        headers: { 1: { sorter: false} }\n    }\n    ); \n} \n); \n</script>\n<table class="tablesorter" id="w10" frame="border" rules="all">\n<thead><tr><th>Icon</th> <th>Title</th> <th>Version</th> <th>Translations</th> <th>Author</th> <th>Last Updated</th> <th>Description</th> <th>Size</th> <th>Downloads</th></tr></thead>' -e \$\ 'a\</table>\n</html>' >w10.html
+
+grep -o "[^/]*.tgz" w13.html | sed 's/tgz$/tar.bz2/' | sort -u >w13list
+grep -o "[^/]*.tgz" w12.html | sed 's/tgz$/tar.bz2/' | sort -u >w12list
+grep -o "[^/]*.tgz" w11.html | sed 's/tgz$/tar.bz2/' | sort -u >w11list
+grep -o "[^/]*.tgz" w10.html | sed 's/tgz$/tar.bz2/' | sort -u >w10list
+
+# Different command for 1.3.x to account for campaigns that went mainline.
+grep "\.tgz\|^[A-Z]" mainline | grep -v "Legend_" | sed '/bz2$/ s/.*/The_Eight_Of_Cembulad.tar.bz2 &/' | sed 's/\(.*\)\.tgz.*-> \+\([^ ]*\).*/\2.tar.bz2 \1.tar.bz2/' | sort | join -a 2 - 14listbig | sed 's/bz2 \(.*\)/bz2\n\1/' | sort | join -v 2 - w13list >w13missing
+grep "\.tgz" mainline | sed 's/\(.*\)\.tgz.*-> \+\([^ ]*\).*/\2.tar.bz2 \1.tar.bz2/' | sort | join -a 2 - 12listbig | sed 's/bz2 \(.*\)/bz2\n\1/' | sort | join -v 2 - w12list >w12missing
+grep "\.tgz" mainline | sed 's/\(.*\)\.tgz.*-> \+\([^ ]*\).*/\2.tar.bz2 \1.tar.bz2/' | sort | join -a 2 - 12listbig | sed 's/bz2 \(.*\)/bz2\n\1/' | cat - w12list | sort | join -v 2 - w11list >w11missing
+grep "\.tgz" mainline | sed 's/\(.*\)\.tgz.*-> \+\([^ ]*\).*/\2.tar.bz2 \1.tar.bz2/' | sort | join -a 2 - 10listbig | sed 's/bz2 \(.*\)/bz2\n\1/' | sort | join -v 2 - w10list >w10missing
+
+for XX in $(find wayback* -path "*wolff*2A" -exec grep tgz {} \;|sed -e 's/.*2F\([^%>]*tgz\).*/\1/' -e 's;.*/\([^/]*tgz\)".*;\1;') ; do grep -c "$XX" wcull|sed "s/^0/$XX/"|grep -v "^[0-9]\+$" >>wxmissing ; done
+
+#### REMOVED UMC SECTION (under construction) ####
+
+## The purpose of this code is to find add-ons that were removed from the server.
+
+join -t @ -v 2 10list 10listbig
+join -t @ -v 2 12list 12listbig
+
+head -n 3 19table.html >removed.html
+
+## Requires an extra big grep -B for SurvivalX entries. Add a <td> where "Type" column is to make it compatible with the rest in a single table.
+
+for GONE in $(grep ^"[A-Z]\|1.4" mainline | sed 's/^1.4\/\([^#]*bz2\).*/\1/' | cat - 14list | sort | join -t @ -v 2 - 14listbig) ; do find addons* web.archive.org -path "*1.4*" -exec grep -B 60 -A 5 "/$GONE" {} \; | tr \\n \\v | sed -e 's/\v<tr>/\n<tr>\v<td><\/td>/g' -e 's;</tr>;&\n;g' | grep "/$GONE" | sed 's/@/ATSIGN/g' | sed -e 's/>download</&@/' -e 's/[^\v]*[JFMASOND][a-z][a-z] [0-3][0-9] 20[01][0-9]</@&/' | sort -t @ -k 3 -k 2 -V | tail -n 1 | sed 's/@//g' | sed -e 's/ATSIGN/@/g' -e 's/http[^a-z]*web.archive.org[^>]\+http/http/g' >>removed.html ; done
+
+join -t @ -v 2 15list 15listbig
+
+for GONE in $(grep ^"[A-Z]\|1.6" mainline | sed 's/^1.6\/\([^#]*bz2\).*/\1/' | cat - 16list | sort | join -t @ -v 2 - 16listbig) ; do find addons* web.archive.org -path "*1.6*" -exec grep -B 27 -A 5 "/$GONE" {} \; | tr \\n \\v | sed -e 's/\v<tr>/\n<tr>/g' -e 's;</tr>;&\n;g' | grep "/$GONE" | sed 's/@/ATSIGN/g' | sed -e 's/>download</&@/' -e 's/[^\v]*[JFMASOND][a-z][a-z] [0-3][0-9] 20[01][0-9]</@&/' | sort -t @ -k 3 -k 2 -V | tail -n 1 | sed 's/@//g' | sed -e 's/ATSIGN/@/g' -e 's/http[^a-z]*web.archive.org[^>]\+http/http/g' >>removed.html ; done
+
+for GONE in $(grep ^"[A-Z]\|1.7" mainline | sed 's/^1.7\/\([^#]*bz2\).*/\1/' | cat - 18listbig | sort | join -t @ -v 2 - 17listbig) ; do find addons* web.archive.org -path "*1.7*" -exec grep -B 27 -A 5 "/$GONE" {} \; | tr \\n \\v | sed -e 's/\v<tr>/\n<tr>/g' -e 's;</tr>;&\n;g' | grep "/$GONE" | sed 's/@/ATSIGN/g' | sed -e 's/>download</&@/' -e 's/[^\v]*[JFMASOND][a-z][a-z] [0-3][0-9] 20[01][0-9]</@&/' | sort -t @ -k 3 -k 2 -V | tail -n 1 | sed 's/@//g' | sed -e 's/ATSIGN/@/g' -e 's/http[^a-z]*web.archive.org[^>]\+http/http/g' >>removed.html ; done
+
+for GONE in $(grep ^"[A-Z]\|1.8" mainline | sed 's/^1.8\/\([^#]*bz2\).*/\1/' | cat - 18list | sort | join -t @ -v 2 - 18listbig) ; do find addons* web.archive.org -path "*1.8*" -exec grep -B 27 -A 5 "/$GONE" {} \; | tr \\n \\v | sed -e 's/\v<tr>/\n<tr>/g' -e 's;</tr>;&\n;g' | grep "/$GONE" | sed 's/@/ATSIGN/g' | sed -e 's/>download</&@/' -e 's/[^\v]*[JFMASOND][a-z][a-z] [0-3][0-9] 20[01][0-9]</@&/' | sort -t @ -k 3 -k 2 -V | tail -n 1 | sed 's/@//g' | sed -e 's/ATSIGN/@/g' -e 's/http[^a-z]*web.archive.org[^>]\+http/http/g' >>removed.html ; done
+
+for GONE in $(grep ^"[A-Z]\|1.9" mainline | sed 's/^1.9\/\([^#]*bz2\).*/\1/' | cat - 19list | sort | join -t @ -v 2 - 19listbig) ; do find addons* web.archive.org -path "*1.9*" -exec grep -B 27 -A 5 "/$GONE" {} \; | tr \\n \\v | sed -e 's/\v<tr>/\n<tr>/g' -e 's;</tr>;&\n;g' | grep "/$GONE" | sed 's/@/ATSIGN/g' | sed -e 's/>download</&@/' -e 's/[^\v]*[JFMASOND][a-z][a-z] [0-3][0-9] 20[01][0-9]</@&/' | sort -t @ -k 3 -k 2 -V | tail -n 1 | sed 's/@//g' | sed -e 's/ATSIGN/@/g' -e 's/http[^a-z]*web.archive.org[^>]\+http/http/g' >>removed.html ; done
+
+cat [^t]*listbig trunklist | sort | join -t @ -v 2 - trunklistbig
+
+tail -n 1 19table.html >>removed.html
+
+## Make sure there are no entries without a <tr> (that is, grep -B was big enough).
+
+grep -v "<tr>" removed.html | grep bz2
+
+#### HTML SECTION ####
+
+## This section is commented out because it depends on the user having downloaded some of the 1.0 add-ons, and having unpacked them in a specific directory. It takes data from downloaded 1.0 add-ons, and converts the 1.0 directory listing to follow the format of the other *table.html files for those add-ons. It drops the Traffic column, as that information isn't offered; I decided to keep Date, even though it is not actually when they were originally uploaded. Although Author: information is also unfortunately not given, information about authorship of some of the add-ons can be recreated from archive.org's Wayback Machine crawls of the old wolff.to server. 
+
+#for W10 in $(find files.wesnoth.org/addons/1.0/*.cfg | sed 's/.cfg$//') ; do 
+ICON=$(grep "icon=" $W10.cfg | sed 's/.*icon="\?\([^"]*\).*/\1/' | sed 's/\r//g' ) ;
+DESC=$(cat $W10.cfg | tr \\n \\v | sed 's/\r\v/\v/g' | tr \\r \\v | sed 's/"[ \t]*\v/"\n/g' | grep -o "description=[\" _]\+.*" | sed 's/"$//' | sed 's/.*description=[\" _]\+//' | sed 's/ \?" +[ _]\+" \?/ /g') ; 
+NAME=$(sed -n "/\[campaign\]/,/name=/p" $W10.cfg | grep "name=" | sed 's/.*name=[\" _]\+//' | sed 's/"[ \t\r]*$//') ; 
+NAMEX=$(echo "$W10" |sed 's;.*1.0/;;' | sed 's/_/ /g') ; 
+SIZE=$(grep "$W10.tar" 10table.html | sed 's/.*> \?\([0-9.]\+[KM]\)<.*/\1/') ; 
+VERS=$(grep -i "version=" $W10/info.cfg | sed 's/^[^"]*"\([^"]*\).*/\1/' ) ; 
+AUTH=$(grep -m 1 "$(echo "$W10" | sed 's/^.*1.0//' | sed 's/$/.tgz/')" w10.html | sed 's;.*<td>\([^<]*\)</td> <td><!-- 200[4-6]-[01][0-9].*;\1;') ; 
+DATE=$(grep "$(echo "$W10" | sed 's/^.*1.0//' | sed 's/$/.tgz/')" w10.html | grep -v "Restoration.tgz.*0\.5" | tail -n 1 | sed 's;.*\(<!-- 200[4-6]-[01][0-9].*-->\)[SMTWF][uoehra][a-z] \([JFMASOND][a-z][a-z] [1-3 ][0-9]\) [0-9:]\+ \(20[01][0-9]\) GMT.*;\1\2 \3;') ; 
+echo -e "<tr>\v<td><img alt=\"$ICON\" src=\"icons/$(echo $ICON | sed 's;^.*/;;')\" width=\"72px\" height=\"72px\"/>\v<div class=\"desc\"><b>$NAME</b><br/>$DESC(no description)</div></td>\v<td><b>$NAME</b><br/>\vVersion: $VERS<br/>\vAuthor: $AUTH</td>\v<td>$SIZE<br/><a href=\"http://$W10.tar.bz2\">download</a></td>\v<td>$DATE</td>\v<td></td>\v</tr>" | sed 's/\([^>]\)(no description)/\1/' | sed '/Restoration.tar/ s;\(Version: \)\(.*\)\(<br/><a.*\)files.wesnoth.org.*bz2;\10.4\22.8M\3web.archive.org/web/20060213005259/http://wolff.to/campaigns/Restoration.tgz;' | sed 's;\(<br/>\vVersion: \)\(<\);\1unknown\2;' | sed 's/"icons\/"/""/' | sed "s;<b></b><br/>;<b>$NAMEX</b><br/>;g" | sed '/Heiress_To_The_Throne/ s/Author: /&Rusty steals from HTTT/' | sed 's/Author: </Author: [?]</' | sed 's/Author: -/Author: Mkgego/' | sed 's;\(download</a></td>\v<td>\)</;\1<!-- 2009-02 28 03:46: -->Feb 28 2009</;' >>10read ; done
+
+## Preserving the old version code, in case it might be useful someday.
+#VERS=$(grep -i "^[^#]*version" $W10.cfg | sed 's/.*[Vv]ersion[^0-9]*\([0-9.]*\).*/\1/' ) ; 
+
+#ls files.wesnoth.org/addons/1.0/*.cfg | sed 's;.*/1.0\(.*\)\.cfg$;\\@\1.tar.bz2@d;' | sed \$\ 'a\s@</h1>@</h1>\\n<table class="tablesorter" id="campaigns">\\v<thead>\\n<tr>\\v<th>Icon\\&nbsp;\\&nbsp;\\&nbsp;</th>\\v<th>Addon\\&nbsp;\\&nbsp;\\&nbsp;</th>\\v<th>Size\\&nbsp;\\&nbsp;\\&nbsp;</th>\\v<th>Date\\&nbsp;\\&nbsp;\\&nbsp;</th>\\v<th>Notes\\&nbsp;\\&nbsp;\\&nbsp;</th>\\v</tr>\\v</thead>\\v<tbody>\\v@' | sed \$\ "a\/<h1>/r 10read" | sed \$\ 'a\/Last modified/ i\</tbody>\\v</table>\\v' | sed \$\ 'a\s@</head>@\\v<link rel=stylesheet href="style.css" type="text/css">\\v<script type="text/javascript" src="jquery.js"></script>\\v<script type="text/javascript" src="tablesorter.js"></script>\\v<script type="text/javascript">\\v$(document).ready(function() \\v{ \\v    $("#campaigns").tablesorter(\\v    {\\v        headers: { 1: { sorter: false} }\\v    }\\v    ); \\v} \\v); \\v</script>\\v&@' | sed -f - -i.bak 10table.html
+
 ## Once we have our lists of unported files in order, we can use them to create pages of the unported add-ons.
 
 for UNPORT in $(find *unport|sed 's/unport$//') ; do cat "$UNPORT"unport | sed 's/.*/\\@\/&@p/' | sed '1i\/tar.bz2/!p\n' | sed -n -f - "$UNPORT"table.html | sed "0,/<table/ s;<table;\n<h2>UNPORTED ADD-ONS FROM $(echo $UNPORT | sed 's/^1/&./')</h2>\n&;" | sed 's;\(<img alt="[^"]*"\)[^>]*;\1;' | sed 's;<br/>\vAfter install the[^<]*;;' | sed 's/<th>Icon/<th>Description/' | sed "s;<script.*#campaigns;&$(echo $UNPORT);" | sed "s;<table.*id=\"campaigns;&$(echo $UNPORT);" >"$UNPORT"unport.html ; done
@@ -76,19 +163,52 @@ for UNPORT in $(find *unport|sed 's/unport$//') ; do cat "$UNPORT"unport | sed '
 
 grep -ho "<[^>]*>[^>]*</td>[^>]*</tr>" *unport.html |grep -v "^<td>"
 
-## Unify trunk with 1.9.
+## This brings add-ons in trunk written for the 1.9 cycle that are not already in 1.9 to 1.9. It will have to be adapted as Wesnoth versions change.
 
-TRUNK=$(join -v 1 trunklist 19list | sed 's/.*/\\@\/&@p/' | sed -n -f - trunktable.html | sed 's/$/\\/') ; sed "s|\(.*</table>\)|$TRUNK<BREAK>&|" 19table.html | sed 's/<BREAK>/\n/' >current.html
+#TRUNK=$(grep "[JFMASOND][a-z][a-z] [0-3][0-9] 201[01]" trunktable.html | grep -o "[^/]*bz2" | sort | join -t @ -v 1 - 19list | sed 's/.*/\\@\/&@p/' | sed -n -f - trunktable.html | sed 's/$/\\/') ; sed "s|\(.*</table>\)|$TRUNK<BREAK>&|" 19table.html | sed 's/<BREAK>/\n/' >current.html
+
+## Might as well separate out the trunk for 1.11, while we're at it.
+
+TRUNK=$(grep "[JFMASOND][a-z][a-z] [0-3][0-9] 201[23]" trunktable.html | grep -o "[^/]*bz2" | sort | join -t @ -v 1 - 111list | sed 's/.*/\\@\/&@p/' | sed -n -f - trunktable.html | sed 's/$/\\/') ; sed "s|\(.*</table>\)|$TRUNK<BREAK>&|" 111table.html | sed 's/<BREAK>/\n/' >dev.html
+
+## Keep the old code around, because it works fine as long as all add-ons in trunk are for the same Wesnoth version.
+
+#TRUNK=$(join -v 1 trunklist 19list | sed 's/.*/\\@\/&@p/' | sed -n -f - trunktable.html | sed 's/$/\\/') ; sed "s|\(.*</table>\)|$TRUNK<BREAK>&|" 19table.html | sed 's/<BREAK>/\n/' >current.html
+
+
+## Create backups before the next commands.
+for HTML in $(ls *.html | grep "unport\|^[cdr]") ; do cp -Tp $HTML $HTML.backup ; done
+
+## If necessary to reverse:
+
+#for HTML in $(ls *.backup | sed 's/.backup//') ; do cp -Tp $HTML.backup $HTML ; done
 
 ## This adds a list of earlier versions to an add-on's "Notes" section. Instead of running through stdin, it might be better to save it to a file, and run it when the *unport.html files are originally created. Some people might want to run this on *table.html, to get its benefit there (including for 1.9). In the future, sort -r will probably have to become sort -rV.
 
 ## This one takes a while to run; it's not hanging.
 
-for UMC in $(grep -h .* *unport newlist | grep -v "Deathmatch.tar.bz2" | grep -v "The_Fall_of_Wesnoth.tar.bz2" | grep -v ^"Chess.tar.bz2") ; do grep "^1\.[0-9]" mainline | grep -v "#capitalization\|^1.9" | sed 's;^\([0-9.]\+/\).*#[a-z]\+ -> \+;\1;' | sed 's; \+.*;;' | sed 's/ *$/.tar.bz2/' | cat - *table.html | sed 's;/trunk/;/1.9/;' | grep -io "[0-9.]\+/$UMC" | sed 's;^\([0-9.]\+\)/.*;\1;' | sort -ur | sed 1\d | tr \\n , | sed 's/,/, /g' | sed 's;\(.*\), $;s@\\(<td>\\)\\([^>]*</td>[^>]*</tr>\\)@\\1\1<br/>\\2@;' | sed "s;.*;\n/\\\/$UMC/ &;" | sed -f - -i *unport.html current.html ; done
+IFS="
+"
+
+LIST=$(grep "bz2" mainline removed.html *missing [1-9]*table.html current.html dev.html | sed 's/\(Huston.*\)\(The_Fall_of_Wesnoth\)/\11x6x\2/' | sed -e 's;^removed.html.*/\([0-9.]\+\)\(/[^>]*bz2\).*;00x\1 (removed)\2;' -e 's/^w1\([0-3]\)missing:/00x1.\1 (wolff)\//' -e 's;^current.html.*/\(trunk\)\(/[^>]*bz2\).*;\1 (1.9)\2;' -e 's;^dev.html.*/\(trunk\)\(/[^>]*bz2\).*;00x\1 (1.11)\2;' -e 's/^1.11/00x&/' | grep -v "#capitalization\|^mainline:1.9\|^mainline:[^1-9]\|^current.html\|^dev.html" | sed 's;^mainline:\([0-9.]\+/\).*#[a-z]\+ -> \+\([^ ]\+\).*;\1\2.tar.bz2;' | grep -o "[^/]*/[^/>]*bz2") ; for UMC in $(grep -h .* *unport newlist | grep -v "Deathmatch.tar.bz2" | grep -v "The_Fall_of_Wesnoth.tar.bz2" | grep -v ^"Chess.tar.bz2" | sed 1i\1.6.The_Fall_of_Wesnoth.tar.bz2) ; do echo "$LIST" | grep -i "/$UMC" | sed 's;^\([^/]\+\)/.*;\1;' | sort -urV | sed 1\d | sed 's/^00x//' | sort -urV | tr \\n , | sed 's/,/, /g' | sed 's;\(.*\), $;s@\\(<td>\\)\\([^>]*</td>[^>]*</tr>\\)@\\1\1<br/>\\2@;' | sed "s;.*;\n/\\\/$UMC/ &;" | sed -f - -i *unport.html current.html ; done
+
+unset IFS
+
+for UMC in $(grep -o "[^/]*tar.bz2" removed.html) ; do WESVER=$(grep -ho "[^/]*/$UMC.*" *unport.html *current.html | grep -v "1.9/The_Fall_of_Wesnoth" | sed 's;^\([^/]*\).*down<.*up<.* 20[01][0-9].*<td>\([^<]*\)<.*;\1, \2;' | sed -e 's/,[^,]*(removed)//' -e 's/,$//') ; sed "\@/$UMC@ s/\([^>]*<\/td>[^>]*<\/tr>\)/$WESVER<br\/>\1/" -i removed.html ; done
+
+for UMC in $(grep -o "[^/]*tar.bz2" dev.html) ; do WESVER=$(grep -ho "[^/]*/$UMC.*" *unport.html *current.html | grep -v "1.9/The_Fall_of_Wesnoth" | sed 's;^\([^/]*\).*down<.*up<.* 20[01][0-9].*<td>\([^<]*\)<.*;\1, \2;' | sed -e 's/,[^,]*1\.11)\?//' -e 's/,$//') ; sed "\@/$UMC@ s/\([^>]*<\/td>[^>]*<\/tr>\)/$WESVER<br\/>\1/" -i dev.html ; done
 
 ## As an extra, I've added a scenario count to the unported lists, under the "Notes" column. The idea is to give a rough idea whether the original author got far enough along to make a campaign worth porting. I've commented it out, because the path to downloaded add-ons is going to be different on different computers; adjust it to your local directory layout. (In fact, most people would probably have them in their userdata folder instead.) Also, many people may not be interested in downloading a bunch of add-ons just to find out how many scenarios they have.
 
-#for UMC in $(find files.wesnoth.org -maxdepth 3 -type d | sed 's;files.wesnoth.org/addons/\?;;' | grep / | sort) ; do SCEN=$(find files.wesnoth.org/addons/$UMC | grep -v "/translations/" | grep -v /backup | grep -v cfg\.ba[ck] | grep -vi autosave | grep -vi "unused/" | grep -v cfg-example | grep -v "cfg.*~" | grep -v Castles_and_Knights/scenarios/[^01] | grep -v Prudence/scenarios/x | sort | xargs -d \\n grep -H "\[/scenario\]" | grep -c "\[/scenario\]") ; sed "\@$UMC.tar.bz2@s;\(<[bt][rd]/\?>\)\([^>]*</td>[^>]*</tr>\);\1scenarios: $SCEN<br/>\v\2;" -i.bak *unport*.html current.html ; done
+## Not including dev.html because I'm not following 1.11 this early in the cycle.
+
+#for UMC in $(find files.wesnoth.org -maxdepth 3 -type d | sed 's;files.wesnoth.org/addons/\?;;' | grep / | sort) ; do SCEN=$(find files.wesnoth.org/addons/$UMC | grep -v "/translations/" | grep -v /backup | grep -v cfg\.ba[ck] | grep -vi autosave | grep -vi "unused/" | grep -v cfg-example | grep -v "cfg.*~" | grep -v Castles_and_Knights/scenarios/[^01] | grep -v Prudence/scenarios/x | grep -v The_Elemental_Sword/[1-9].txt | grep -v old_copy.txt | grep -v Rock_out/.*Orcs$ | grep -v Northern_Cross/Goblin_Raid$ | sort | xargs -d \\n grep -H "\[/scenario\]" | grep -c "\[/scenario\]") ; sed "\@/$UMC\.t[ag][rz]@s;\(<[bt][rd]/\?>\)\([^>]*</td>[^>]*</tr>\);\1scenarios: $SCEN<br/>\v\2;" -i *unport*.html current.html removed.html ; done
+
+## This checks for non-cfg files with the [/scenario] tag, most of which will have to be excluded above.
+ 
+#find files.wesnoth.org ! -name "*.tar.bz2" -exec grep -l "\[/scenario\]" {} \; | grep -v \.cfg$
+
+#sed -e '/Fargoths_Bow/ s/Author: unknown/Author: [Nyimen]/' -e '/Fargoths_Bow/ s/>unknown</>[Fargoth\x27s Bow]</' -i 14unport.html
 
 ## Master list for all unported from all Wesnoth versions. This can be commented out if you're satisfied with separate pages.
 
@@ -96,13 +216,19 @@ find *unport.html | sort -r | xargs -d \\n cat | sed '2,$s;.*\(<script.*\)<\/hea
 
 ## This outputs a list, formatted for the forum, of the campaign add-ons. It is commented out because it depends on having run the previously commented-out scenario command.
 
-#
-grep ">scenarios: [1-9]" allunported.html | grep -v "<td>MP era<" | sed 's/<[0-9,]\+>//' | sed 's/\xc9/…/' | sed 's;.*class="desc"><b>\([^<]\+\)</b>.*<br/>\vAuthor: \([^<]\+\).*<a href=\([^>]\+\).*<br/>\v\([0-9a-z]*\) up.*<td>\([0-9., ]*\)[<br/>]*scenarios: \([0-9]\+\).*;[url=\3]\1[/url] [indent]\2[/indent] [indent]up:\4[/indent] [indent]sc:\6[/indent] [indent]\5[/indent];' | sed 's;.*class="desc"><b>\([^<]\+\)</b>.*<br/>\vAuthor: \([^<]\+\).*<a href=\([^>]\+\).*<td>scenarios: \([0-9]\+\).*;[url=\3]\1[/url] [indent]\2[/indent] [indent]up:N/A[/indent] [indent]sc:\4[/indent];' | sed 's/]/&\//' | sort -k 5,5r -k 7 -t / | sed 's;]/;];' >forum
+#grep ">scenarios: [1-9]" *unport.html | sed 's/<[0-9,]\+>//' | sed 's/\xc9/…/' | sed 's;.*class="desc"><b>\([^<]\+\)</b>.*<br/>\vAuthor: \([^<]\+\).*<a href="\([^>]\+\)"\(.*\)<td>\([0-9., ()a-z]*\)[<br/>]*scenarios: \([0-9]\+\).*;[url=\3]\1[/url] [indent]\2[/indent] [indent]sc:\6[/indent] [indent]up:@@@\4@@@[/indent] [indent]\5[/indent];' | sed -e 's/@@@.*\v\([0-9a-z]*\) up<.*@@@/\1/' -e 's/@@@.*@@@/N\/A/' | sed 's/]/&\//' | sort -k 5,5r -k 7 -t / | sed 's;]/;];' | sed 's; \[indent\]\[/indent\]$;;' >forum
 
+## Get my old comments and add them.
+
+#wget -x "forums.wesnoth.org/viewtopic.php?f=8&t=36733"
+
+## Would be php@ on Windows.
+
+#for FORUM in $(grep -o "addons/.*\.t[ag][rz]" forum) ; do COMMENT=$(sed 's/<br \/>/\n&/g' "forums.wesnoth.org/viewtopic.php?f=8&t=36733" | grep "$FORUM" | sed -e 's/.*left:1em">//' -e 's/<[</div>]*$//' | grep -v ^"up:\|[0-9, ]\+$" | sed 's/<![^!]*\(http[^"]*\)[^!]*!-- l -->/\1/g' | sed -e 's/&#40;/(/g' -e 's/&#41;/)/g' -e "s/&#39;/\x27/g" -e 's/&quot;/"/g' -e 's/php@/php?/g' -e 's/&amp;/\&/g' -e 's/.\+/ [indent]&[\/indent]/') ; sed -e "\@$FORUM@ s~$~$COMMENT~" -i forum ; done
 
 ## Now that we are done with our files, we can convert the vertical tabs back to newlines.
 
-sed 's/\v/\n/g' -i.bak *table.html *unport*.html current.html
+sed 's/\v/\n/g' -i.bak *table.html *unport*.html current.html removed.html dev.html
 
 
 
