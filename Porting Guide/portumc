@@ -1,0 +1,202 @@
+As a porter of old campaigns to 1.8, I'd like to share what I'm learning along the way. My hope is that this will not only ease the way for other porters, but encourage more players to get involved in porting.
+
+Porting is not as hard as you may be fearing. Powerful tools, particularly wmllint, will do much, sometimes most, of the work for you. And the basics of WML are simple enough for [url]even precocious 8 and 12-year-olds to grasp.
+
+With the methods below, virtually every campaign from 1.4 on up will run on 1.8. (Earlier campaigns are a chancier proposition.) If you loved an old campaign, you don't have to pine for "someone" to eventually port it. That "someone" could be YOU!
+
+CAVEATS
+
+* Obviously, at this point, most people are interested in the 1.10 release, not 1.8. I will update this guide as I gain experience with 1.10; for now, much of what I say should still be applicable.
+
+* My experience right now is with single-player campaigns. If you are interested in multiplayer add-ons, there may be particular issues that I know nothing about.
+
+* The earliest add-ons (1.0 and 1.2) are harder to port than more recent ones. Although I will offer a few tips, I have never completed a conversion of an early campaign.
+
+* I have not had to deal with Lua or (very much) Formula AI, so I cannot help you if you run into problems with them.
+
+* Also, I offer command-line solutions below that are based on a UNIX-type environment. If you are on Windows or another non-UNIX operating system, you may have to adapt my advice, as [will be] discussed in more detail later.
+
+OVERVIEW: BASIC PROCEDURE
+
+0. For very early add-ons (1.0 and 1.2), an extra step is necessary. You will first have to run the campaign through wmllint for 1.4, as backward compatibility with early add-ons was dropped from later wmllint versions. (If you do not have a copy of Wesnoth 1.4, you can download the old wmllint alone from  gna.) 
+
+1. Start by running wmllint on the old add-on, which will automatically do most of the work of converting the add-on to the new Wesnoth version. Directions for wmllint can be found on the wiki. wiki.wesnoth.org/Maintenance_tools
+
+2. Already, most (1.4 and 1.6) campaigns will boot up into the first turn. However, wmllint leaves a few loose ends that you will have to fix. I cover these below.
+
+3. To aid in debugging, run wmllint and wmlscope, outputting their messages to logfiles for perusal.
+a) wmllint is not just a conversion utility, but a WML debugger. Run wmllint again, in dryrun mode, saving the output to a log. (If you logged the conversion, or a pre-conversion dryrun, these error messages will be present in that log. However, that log will be cluttered with conversion-related reports, making it difficult to find the error messages. This is why I recommend doing a dryrun after the conversion. Though grep -v " -> " yourlogfile | grep -v "inserting" | grep -v "converting" will approximate the same result.) I plan to write a guide to wmllint error messages, explaining what they mean, and which are prone to false positives.
+b) A lot of resources in data/core/ (images, sounds, macros) get renamed, reshuffled, or even removed between versions. wmlscope should alert you to these changes, and maybe a few macro bugs as well.
+
+4. Now you can go through
+
+With all the potential bugs highlighted by wmlscope and wmllint checked out,
+
+Although it might seem ideal to thoroughly playtest a campaign before uploading, I'm of the school of thought that your testing phase is taking a lot longer than you expected, you should go ahead and upload it anyway.
+
+Most of the bugs you'll have to deal with are likely inherited from the original version. Both wmlscope and wmllint will help debug these.
+2. A lot of resources get renamed and reshuffled between versions. wmlscope should cover this.
+3.
+
+
+SELECTING AN ADD-ON
+
+It's quite likely that you already have in mind a beloved add-on you would like to update. However, there are a few considerations to keep in mind 
+
+
+FINDING UNPORTED ADD-ONS
+If you already have a specific add-on that you want to port, and know how to get it, skip this section.
+
+If you still have your userdata directory with your old add-ons from the earlier version on your computer, but you don't know where it is located, read this link.
+
+
+
+LIST OF UNPORTED ADD-ONS
+
+PORTING ETIQUETTE
+
+Although not strictly required, it is considered good form to contact the original author, or last maintainer, of an add-on before porting. 
+
+PREPARATIONS
+
+find data/c* -type d -exec mkdir /dev/shm/{} \;
+for AA in $(find data/c*/* -name *.ogg) ; do head -c 0 $AA >/dev/shm/$AA ; done
+for AA in $(find data/c*/* -name *.wav) ; do head -c 0 $AA >/dev/shm/$AA ; done
+for AA in $(find data/c*/* -name *.png) ; do head -c 0 $AA >/dev/shm/$AA ; done
+for AA in $(find data/c*/* -name *.jpg) ; do head -c 0 $AA >/dev/shm/$AA ; done
+for AA in $(find data/c*/*) ; do cp -T -n $AA /dev/shm/$AA ; done
+
+
+
+for AA in $(find * -maxdepth 0 -type d) ; do mv -T -n $AA.cfg $AA/_main.cfg ; done
+
+## For old-style campaigns, this renames the campaign file to _main.cfg, moves the subfolders one level higher to the main folder, and gets rid of the redundant folder.
+
+for AA in $(find * -maxdepth 0 -type d) ; do mv -T $AA/$AA.cfg $AA/_main.cfg ; done
+for AA in $(find * -maxdepth 0 -type d) ; do mv $AA/$AA/* $AA ; done
+for AA in $(find * -maxdepth 0 -type d) ; do rmdir $AA/$AA ; done
+
+MOPPING UP
+wmllint will have done the main work of conversion. In fact, most 1.6 (though not 1.4) campaigns will already load up the first turn. However, wmllint doesn't do everything, not even for 1.6 add-ons. These are some of the problems you may encounter.
+
+------
+1.6 and earlier
+
+[binary_path] and paths in general
+
+
+sed 's;\.\?\.\?/\?userdata/data/campaigns;data/add-ons;g' -i */*.cfg
+for AA in $(find * -maxdepth 0 -type d) ; do sed "s;data/campaigns/$AA;data/add-ons/$AA;g" -i $AA/*.cfg; done
+for AA in $(find * -maxdepth 0 -type d) ; do sed "s;data/campaigns/$AA;data/add-ons/$AA;g" -i $AA/*/*.cfg; done
+
+for AA in $(find files.wesnoth.org -name "*.cfg" -exec grep -l "data/campaigns" {} \;) ; do ls data/campaigns | sed 's;.*;\\@&@s/^/EMMELL/;' | sed \$\ 'a\/EMMELL/! s;data/campaigns;data/add-ons;'|sed \$\ 'a\s/EMMELL//g' | sed -f - $AA | grep "data/" >>paths ; done
+
+
+RGB color codes
+
+find */* -name "*.cfg" -exec grep -l "<[0-9]\+,[0-9]\+,[0-9]\+>" {} \;|xargs -d \\n sed 's;<[0-9]\+,[0-9]\+,[0-9]\+>;;g' -i
+
+
+double translatability
+
+
+find */* -name "*.cfg" -exec grep -l "=_ _" {} \;|xargs -d \\n c sed 's;=_ _;=_;' -i
+
+
+unquoted translatability
+find */* -name "*.cfg" -exec grep -l "=_ _" {} \;|xargs -d \\n c sed 's;=_ _;=_;' -i
+
+no AMLA
+find */units/* -name "*.cfg" -exec grep -l "advances_to.*null"  {} \;|xargs -d \\n grep -iL amla
+------
+1.4 and earlier
+
+[unit] _type
+This affects all campaigns 1.4 and below (except those that don't use any custom units) and will stop the campaign from loading. From 1.6 up, unit .cfg files were changed to use the [unit_type] tag instead of [unit]. wmllint will warn you that "[unit] needs hand fixup to [unit_type]", but won't actually do the job itself. Presumably, it is being cautious, because [unit] is still a valid tag in other contexts. However, if you overlook the wmllint message, and don't change the unit .cfgs, Wesnoth will refuse to load the campaign.
+
+find */units/* -name "*.cfg" -exec grep -l "\[/\?unit\]" {} \;|xargs -d \\n sed 's;\(\[/\?unit\)\];\1_type];' -i
+
+
+
+------
+1.2 and earlier
+
+portraits/core
+
+# can be added to wmllint right after line:        # Changed just before 1.5.9
+        ("portraits/core",
+         "portraits"),
+
+
+range=short
+range=long
+
+find */* -name "*.cfg" -exec grep -l "range=long" {} \;|xargs -d \\n sed 's;range=long;range=ranged;' -i
+find */* -name "*.cfg" -exec  grep -l "range=short" {} \;|xargs -d \\n sed 's;range=short;range=melee;' -i
+
+maps
+
+
+halo/ice-halo*
+halo/elven/ice-halo
+
+random-enemy.png
+unknown-unit.png
+---
+image_defensive
+This is actually a 1.0 problem, but I've run into a couple of incompletely converted ports to 1.6 that still retain this vestige of archaic WML. If a file is still using image_defensive, probably ALL of its animation code is pretty hoary. If it is using sprites from a mainline unit, it would probably be best to replace all animation code - defensive, attack, and sounds - with the animation code from the mainline unit. For example, if your add-on has a custom unit, the "Elvish Treehugger," and you see that it is using the elvish avenger sprites for animation, your best bet is probably just to copy over the animation code from Elvish_Avenger.cfg .
+
+find */units/* -name "*.cfg" -exec grep -l "image_defensive" {} \;|xargs -d \\n sed 's;image_defensive=\(.*\);{DEFENSE_ANIM \1 XXIMG XXHIT} # EYEBALL;' -i
+for IMGDEF in $(find */units/* -name "*.cfg" -exec grep -l "XXIMG XXHIT" {} \;) ; do sed "s;XXIMG;
+
+get_hit_sound
+
+find *.cfg -exec grep -l "{NAMED_NL" {} \;|xargs -d \\n sed 's;{NAMED_NL \([0-9]\+ [0-9]\+\) \(([^)]\+)\) (\?\([^0-9)]\+\))\? \([0-9]\+\)};{NAMED_GENERIC_UNIT \4 \2 \1 (\3) (_"\3")};' -i
+find *.cfg -exec grep -l "{RAND_N_NL" {} \;|xargs -d \\n sed 's;{RAND_N_NL \([0-9]\+ [0-9]\+\) \(([^)]\+)\) \([0-9]\+\)};{GENERIC_UNIT \3 \2 \1};' -i
+
+WMLLINT LOG
+
+unknown 'Name' referred to by id
+
+This can be a valuable message alerting you to misspelled names or characters that the designer forgot to create or recall. Unfortunately, it is prone to high false positives, because it doesn't seem to recognize units created or recalled by macros. This functionality apparently doesn't work in wmllint in 1.9.8.
+
+The following set of commands cuts down on these false positives by excluding those that are mentioned in macros. In this example, wmllint output was directed to a file called "lintlog".
+
+grep "referred to by id" lintlog|sed "s;^\"\([^\"]*\).*\(line [0-9]\+:\) unknown .\(.*\). referred to by id;grep -wL \"{.*\3\" \1\|sed \"s,$, - \2 \3,\" >>idcheck;" >missingpersons.sh
+chmod +x missingpersons.sh
+./missingpersons.sh
+
+Now you can view "idcheck" in your preferred app.
+
+Although this will eliminate hits for units created or recalled by name in a macro, that does not mean that all the remaining hits in idcheck are bad. For instance, if the designer had grouped multiple units together in a single create/recall macro (say, {RECALL_HEROES} or {ELVISH_ALLIES_RETURN}), that would not be picked up above. Similarly, a unit's creation may be triggered by an event defined in /utils.
+
+For example, if a designer forgot to recall a unit, and then performed a {MODIFY_UNIT} on that unit, the above macro 
+
+grep "referred to by id" lintlog|sed "s;^\"\([^\"]*\).*\(line [0-9]\+:\) unknown .\(.*\). referred to by id;grep -wH \"{.*\3\" \1\|sed \"s,$, - \2 \3,\" >>idmacrocheck;" >foundpersons.sh
+chmod +x foundpersons.sh
+./foundpersons.sh
+
+illegal child of [if]
+
+Probably, the designer forgot to include [then] and [/then] after describing the triggering conditions.
+
+speaks in his/her death event
+
+You can get away with ignoring this if you wish. The standard is that last words should be spoken in an event named "last breath" instead of "die". The difference is that "last breath" runs before the death animation plays. If other things happen after the last words, those should go into another event keyed to "die" (or possibly "victory", if the death is scenario-winning). But if you feel all this is more trouble than it's worth, there is no real functional difference.
+
+unit declaration without side attribute
+
+A unit has been created or recalled without telling which side it's on. In 1.8, however, this has a major source of false positives. Units created during setup within the [side] tag are automatically considered part of that side. (As of 1.9, wmllint recognizes units created or recalled within a [side] tag, and no longer gives off this false positive.)
+
+There are also situations where Wesnoth will implicitly assume that a unit belongs to side 1, if no side is given. However, this behavior is deprecated, so if there is such a condition, you should go ahead and add a side=1 line.
+
+WMLSCOPE
+
+
+UPLOADING
+
+
+
+grep -v ":0"$|sed 's/:[0-9]*$//'
+It may seem presumptuous for me to be offering tips, considering that at this stage, I have only ported a single rather small campaign. On my local machine, however, I have several old campaigns that I've run through wmllint. With multiple campaigns, I'm able to spot recurring patterns and problems. With the methods below, I've gotten virtually every campaign from 1.4 up, that I've tested, to boot into the first turn of the first scenario. (Earlier campaigns are a much iffier proposition.)
+
