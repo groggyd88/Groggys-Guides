@@ -1,0 +1,126 @@
+From time to time, I've alluded to the fact that I've been working on a guide to porting. As I continue plugging away on the larger work, I'd like to break out one section, explaining the extra steps involved in porting early add-ons (Wesnoth 1.0 and 1.2).
+
+=====
+CAVEATS
+
+I have never done a full conversion of an early campaign myself. Instead, this guide is based on my deep study of Wesnoth's user-made content (UMC). Looking at multiple campaigns, I am able to spot recurring patterns and problems.
+
+I don't deny that someone who has actually done an early port might be able to offer better, more practical advice. However, as far as I know, no one who has done so has documented their process.
+
+I should also warn that (at least at this stage) these instructions do not really provide enough detail to help someone who doesn't know what Python is, has never used a command line, and so forth. They would be helpful mainly to those who already know how to use wmllint to port more recent add-ons, but could use more information about the additional complications of porting old UMC.
+
+=====
+DOWNLOADING WMLLINT 1.4
+
+Porting early add-ons takes a little more effort, not just because the code is older, but because Wesnoth's main conversion tool, wmllint, has dropped support for converting 1.0 and 1.2 add-ons. Instead, you first have to run the add-on through wmllint for 1.4, to upgrade it to 1.4. This "1.4" version of the add-on can then be run through the rest of the conversion process.
+
+But don't rush off and download a full copy of Wesnoth 1.4! You can download the old wmllint alone from [url]gna.
+
+You should then put the old wmllint in Wesnoth's data/tools directory, renaming it so that it doesn't conflict with the current wmllint. (Although wmllint will not work as a standalone file, it can use the current versions of the other files it relies on.)
+
+=====
+MODIFYING WMLLINT 1.4
+
+Just as I recommend that porters make certain modifications to the current wmllint, so too I recommend modifying the old wmllint. Due to the changes between versions, however, a different set of mods is called for.
+
+These are possible wmllint mods:
+
+* comment out lines 1178 ("    assert female_end != -1") and 1191 ("    assert male_end != -1")
+
+Many 1.2 unit files will crash wmllint, and the tracebacks point to these two lines. Lacking Python knowledge, I don't know what these two lines do (or were meant to do). After commenting them out, however, wmllint no longer barfs on those files, while still apparently doing everything it was doing before with the other files.
+
+The "assert male_end" error crashes files with gender=male, or no gender= key (thus defaulting to male). The "assert female_end" error is the female counterpart, and is the traceback that comes up for units with both genders.
+
+It is possible that there was an effort to solve this problem, because line 1052 has this comment:
+
+    # Wrap this in try/except because some newer animation syntax chokes it.
+
+However, if this was the problem they were trying to solve, it obviously didn't work.
+
+* update portraits/core image paths
+
+This is something I definitely think you should insert into wmllint, the only question is whether to do it to the current wmllint or the 1.4 version.
+
+At one time, Wesnoth organized portraits in the format, "portraits/Artist_Name/race-unit.png". In 1.5.9, this was changed to the current file structure, "portraits/race/unit.png", and code added to wmllint to update these old paths.
+
+Back in the 1.0 days, however, Wesnoth's portrait directories were named "portraits/core/Artist_Name/". But wmllint has never removed "core/" from paths, perhaps because the changeover had already been made by the time ESR joined Wesnoth development. Nevertheless, many 1.2 campaigns still have the old "portraits/core" filepaths.
+
+However, the 1.6 port of Invasion of Arendia (in which some pretty hoary code has survived) is the only campaign above 1.2 that I'm aware of that still uses portraits/core. So by making the substitution in wmllint 1.4, you avoid the overhead of running a command on UMC that doesn't need it. You also don't have to remember to insert this into wmllint again as you move from one Wesnoth version to another (say, 1.10 to 1.11 or 1.12).
+
+On the other hand, there is no real need to solve the portraits/core issue at the 1.4 level, unless for some godawful reason you were looking to port an add-on to play on 1.4. By adding it to the current wmllint, you insure against the possibility that there is another stray add-on using portraits/core. (I should note that I have not really looked at multiplayer add-ons.)
+
+For wmllint 1.4, add this line to one of the sections within "filemoves = {" (line 80). The list in the "older:" section (lines 92-208) is an appropriate place.
+
+        ("portraits/core",          "portraits"),
+
+Note: if you do this, you will have to increment future line number references in this guide by one.
+
+* comment out the mask exit
+
+If wmllint encounters a mask file that does not end with the .mask extension, it will terminate abruptly and exit with a so-called "fatal error." I've advocated that wmllint simply drop the mask exit as unnecessary harassment, and I recommend that porters comment it out of the current wmllint.
+
+However, as far as I know there actually aren't any unported early campaigns with "bad" mask files (though again, I have not been looking much at non-campaign add-ons). Given this issue's apparently limited relevance to old UMC, and that my more detailed thoughts can be found elsewhere, I won't belabor the point further.
+
+If you would still like to comment out the mask exit as a precaution, it is line 1617 ("                sys.exit(1)").
+
+=====
+STARTING OUT
+
+
+
+
+
+* Also, I offer command-line solutions below that are based on a UNIX-type environment. If you are on Windows or another non-UNIX operating system, you may have to adapt my advice, as [will be] discussed in more detail later.
+
+
+x. There are a few errors you can check for before running wmllint, as they will prevent it from working to the fullest.
+
+
+
+spaces
+backslashes
+userdata/
+non-UTF-8 encoding
+
+AMLA TOUGH
+
+WMLLINT CRASHES
+
+If wmllint crashes, here is an interpretation of some of the tracebacks:
+
+  File "tools/wmllint", line 1191, in hack_syntax
+    assert male_end != -1
+AssertionError
+
+  File "tools/wmllint", line 1178, in hack_syntax
+    assert female_end != -1
+AssertionError
+
+If you are getting these errors, you didn't take my advice to comment out these lines (see above).
+
+  File "tools/wmllint", line 1277, in hack_syntax
+    assert attackname != None
+AssertionError
+
+Commenting out this line doesn't work; it'll just move the crash a few lines down. The cause can be found in a comment a few lines up, in lines 1259-60:
+
+    # Note: This assumes that the frame sequence goes last in the [attack] WML
+    # with nothing after it, and will fail if that is not true.
+
+This appears to be the problem. Move any lines in [attack] that come after the [frame] sequence(s) to the top, so that they come before [frame].
+
+  File "tools/wmllint", line 678, in sanity_check
+    assert(unit_id)
+AssertionError
+
+
+
+
+
+
+
+_main.cfg
+map
+binary path
+external binary path
+{UNIT}
