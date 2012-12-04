@@ -6,9 +6,13 @@ This is a collection of my guides for Wesnoth. Some of these have been posted in
 It features:
 
 *List of Unported UMC
+
 *UMC Timeline
+
 *Wolff Listings
 
 Also includes these drafts:
+
 *Guide to wmllint Errors
+
 *Porting UMC: Guide
