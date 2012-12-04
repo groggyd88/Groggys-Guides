@@ -1,0 +1,287 @@
+<html>
+<head>
+<title>WMLLINT ERRORS</title>
+<meta name="keywords" content="wmllint,wesnoth">
+<meta name="description" content="">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<meta http-equiv="content-style-type" content="text/css">
+<style>
+pre{white-space:pre-wrap}
+table{background:honeydew}
+</style>
+</head>
+<body>
+<h2>WMLLINT ERROR MESSAGES</h2>
+
+<p>wmllint is one of the most powerful aids to authors of Wesnoth campaigns, eras, and other content. It is well-known as a porting utility, automatically doing most of the work of converting old campaigns and content to the latest version of Wesnoth. But it is a general purpose debugging tool, alerting authors and porters to possible errors in their WML (Wesnoth Markup Language).
+
+<p>Unfortunately, it is not always apparent to someone new to WML what to do about wmllint's error messages. What do they mean, which are real problems, and which are false alarms? This guide aims to explain these errors, illustrated with real examples.
+
+<h3>EXIT ERRORS</h3>
+
+
+
+<h4>unknown 'Name' referred to by id</h4>
+
+<p>This can be a valuable message alerting you to misspelled names, or characters that the designer forgot to create or recall. Unfortunately, it is prone to high false positives, because it doesn't recognize units created or recalled by macros.
+
+<!-- I HAVE A MUCH BETTER WAY OF HANDLING THIS NOW
+
+<p>The following set of commands cuts down on these false positives by excluding those that are mentioned in macros. In this example, wmllint output was directed to a file called "lintlog".
+
+<p><pre>grep "referred to by id" lintlog|sed "s;^\"\([^\"]*\).*\(line [0-9]\+:\) unknown .\(.*\). referred to by id;grep -wL \"{.*\3\" \1\|sed \"s,$, - \2 \3,\" >>idcheck;" >missingpersons.sh
+chmod +x missingpersons.sh
+./missingpersons.sh</pre>
+
+<p>Now you can view "idcheck" in your preferred app.
+
+<p>Although this will eliminate hits for units created or recalled by name in a macro, that does not mean that all the remaining hits in idcheck are bad. For instance, if the designer had grouped multiple units together in a single create/recall macro (say, {RECALL_HEROES} or {ELVISH_ALLIES_RETURN}), that would not be picked up above. Similarly, a unit's creation may be triggered by an event defined in /utils.
+
+<p>For example, if a designer forgot to recall a unit, and then performed a {MODIFY_UNIT} on that unit, the above macro 
+
+<pre>grep "referred to by id" lintlog|sed "s;^\"\([^\"]*\).*\(line [0-9]\+:\) unknown .\(.*\). referred to by id;grep -wH \"{.*\3\" \1\|sed \"s,$, - \2 \3,\" >>idmacrocheck;" >foundpersons.sh
+chmod +x foundpersons.sh
+./foundpersons.sh</pre>
+-->
+
+<table>
+<th colspan="2">Example: "add-ons/Prudence/scenarios/5_Something_Blue.cfg", line 349: unknown 'Humphrey' referred to by id</th>
+<tr><td colspan="2" style="padding:20px">wmllint reports that it doesn't recognize the ID of this message's speaker, and in fact the message doesn't display.</td></tr>
+<tr><td>The problem, however, arises earlier, when the unit was created. It has a name= key (the name that the user sees, which can be changed by translators), but no id= key. This means that Wesnoth generates its own ID for the unit.</td>
+<td>After adding the id= value, the message works and wmllint is happy. (You can also see the translatability underscores that wmllint added to the name= and message= entries.)</td></tr>
+<tr>
+<td><pre>
+   322	 [unit]
+   323	  type=Dark Sorcerer
+   324	  x=6
+   325	  y=7
+   326	  side=3
+   327	  name=Humphrey
+   328	 [/unit]
+^^^^^^^^^^
+   348	 [message]
+   349	  id=Humphrey
+   350	  message="We answer your call, dread lord!  Death to the invaders!"
+   351	 [/message]
+
+</pre></td>
+<td><pre>
+   323	        [unit]
+   324	            type=Dark Sorcerer
+   325	            x=6
+   326	            y=7
+   327	            side=3
+   328	            <span style="color: red">id=Humphrey</span>
+   329	            name=_ "Humphrey"
+   330	        [/unit]
+^^^^^^^^^^
+   350	        [message]
+   351	            id=Humphrey
+   352	            message=_ "We answer your call, dread lord! Death to the invaders!"
+   353	        [/message]
+</pre></td>
+</tr>
+</table>
+
+<table>
+<th colspan="2">Example:</th>
+<tr><td colspan="2"></td></tr>
+<tr>
+<td><pre>
+</pre></td>
+<td><pre>
+</pre></td>
+</tr>
+</table>
+
+<h4>illegal child of [if]</h4>
+
+<p>Probably, the designer forgot to include [then] and [/then] after describing the triggering conditions.
+
+<h4>unit speaks in his/her death event</h4>
+
+<p>You can get away with ignoring this if you wish. The standard is that last words should be spoken in an event named "last breath" instead of "die". (From the prevalence of this error, it's obvious that many designers are unaware of this convention.) The difference is that "last breath" runs before the death animation plays, rather than after. If other things happen after the last words (endlevel, by itself, doesn't count), those should be split off into another event keyed to "die".
+
+<p>But if you feel this is more trouble than it's worth to "correct," this is a purely aesthetic issue. The game will not crash, and there is no real functional difference to gameplay.
+
+<p>(There could also be special cases, such as a character who has the power of resurrection, or lives on as a disembodied spirit or soul, where you actually would want him or her to speak after they die. In 1.10, you can use the special comments "# wmllint: deathcheck off" and "# wmllint: deathcheck on" to suppress the speech check.)  
+
+<table>
+<th colspan="2">Example:</th>
+<tr><td colspan="2"></td></tr>
+<tr>
+<td><pre>
+  1020	    [event]
+  1021	        name=die
+  1022	        first_time_only="yes"
+  1023	        [filter]
+  1024	            id=Elyssa
+  1025	        [/filter]
+  1026	        [filter_second_attack]
+  1027	            [not]
+  1028	                name=union
+  1029	            [/not]
+  1030	        [/filter_second_attack]
+  1031	
+  1032	        [message]
+  1033	            speaker=Elyssa
+  1034	            message= _ "I told you so, fools. I am immortal!"
+  1035	        [/message]
+  1036	
+^^^^^^^^^^
+  1181	    [/event]
+</pre></td>
+<td><pre>
+  1046	    [event]
+  1047	        name=die
+  1048	        first_time_only="yes"
+  1049	        [filter]
+  1050	            id=Elyssa
+  1051	        [/filter]
+  1052	        [filter_second_attack]
+  1053	            [not]
+  1054	                name=union
+  1055	            [/not]
+  1056	        [/filter_second_attack]
+  1057	
+  1058	        <span style="color: red"># wmllint: deathcheck off</span>
+  1059	        [message]
+  1060	            speaker=Elyssa
+  1061	            message= _ "I told you so, fools. I am immortal!"
+  1062	        [/message]
+  1063	        <span style="color: red"># wmllint: deathcheck on</span>
+  1064	
+^^^^^^^^^^
+  1214	    [/event]
+</pre></td>
+</tr>
+</table>
+
+<table>
+<th colspan="2">Example:</th>
+<tr>
+<tr><td colspan="2"></td></tr>
+<td><pre>
+</pre></td>
+<td><pre>
+</pre></td>
+</tr>
+</table>
+
+
+<table>
+<th colspan="2">Example:</th>
+<tr>
+<tr><td colspan="2"></td></tr>
+<td><pre>
+</pre></td>
+<td><pre>
+</pre></td>
+</tr>
+</table>
+
+<table>
+<th colspan="2">Example:</th>
+<tr>
+<tr><td colspan="2"></td></tr>
+<td><pre>
+</pre></td>
+<td><pre>
+</pre></td>
+</tr>
+</table>
+<h4>unit declaration without side attribute</h4>
+
+<p>A unit has been <span color="red">created or recalled</span> without telling which side it's on. In 1.8, however, this has a major source of false positives. Units created during setup within the [side] tag are automatically considered part of that side. (As of 1.9, wmllint recognizes units created or recalled within a [side] tag, and no longer gives off this false positive.)
+
+<p>There are also situations where Wesnoth will implicitly assume that a unit belongs to side 1, if no side is given. However, this behavior is deprecated, so if there is such a condition, you should go ahead and add a side=1 line.
+
+<table>
+<th colspan="2">Example:</th>
+<tr><td colspan="2"></td></tr>
+<tr>
+<td><pre>
+</pre></td>
+<td><pre>
+</pre></td>
+</tr>
+</table>
+
+<h3>UNIT FILE ERRORS</h3>
+
+<h4>[%unit_type] has no usage type</h4>
+<h4>[%unit_type] has unknown advancements %s</h4>
+<h4>[%unit_type] has unknown movement type</h4>
+<h4>[%unit_type] has unknown race</h4>
+<h4>unit [%unit_type] has no race</h4>
+<h4>unit [%unit_type] has superfluous {SPECIAL_NOTES}</h4>
+
+
+
+<h4>unit [%unit_type] is missing notes +%s</h4>
+
+<p>Although the unit has a trait or ability, it does not have the special notes for that trait in its description. Simply copy the notes from the error message and paste it at the end of the unit's description= key.
+
+<h4>unit [%unit_type] is missing traits %s</h4>
+
+<p>Although the unit has the special notes for a trait or ability in its description, it does not actually possess that trait. The implication is that the developer should give the unit the missing trait.
+
+<p>It is possible, however, that the designer did not intend for the unit to have the trait, and it is the note that is in error. This might happen, for example, if the designer copied over code from another unit to start off the file, and removed the trait but forgot to remove the note.
+
+<p>Obviously, if you are the creator, you will know which was intended. If you are a maintainer or porter, you might want to ask the original designer, if possible.
+
+#print '"%s", %d: unit has traits %s and notes %s</h4>
+print '"%s", line 1: no textdomain string' % filename</h4>
+print '%s, "line %d": adding map border...</h4>
+print '%s, "line %d": adding %s usage header...</h4>
+<h4>closer [/%s] with tag stack empty.' % (filename, lineno+1, tag)</h4>
+<h4>closing %s I see %s with %s' % (filename, lineno, closer, tag, attributes)</h4>
+<h4>color spec in line requires manual fix.' % (filename, line)</h4>
+<h4>derivation of %s from %s does not resolve</h4>
+<h4>.description may need hand fixup</h4>
+<h4>double space after sentence end</h4>
+#<h4>extraneous space in translatable string</h4>
+<h4>heals attribute no longer takes a boolean</h4>
+<h4>inserting "image=wesnoth-icon.png"'%(filename, i+1)</h4>
+<h4>macro reference in translatable string</h4>
+<h4>multiple textdomain strings on lines %s</h4>
+<h4>nonstandard word-wrap style within message' % (filename, linecount)</h4>
+<h4>no %s units recruitable%s' % (filename, pl, utype, rshow)</h4>
+<h4>< or > in pango string requires manual fix.' % (filename, line, oldstyle)</h4>
+<h4>probable capitalization or punctuation error</h4>
+<h4>quote-enclosing attribute value.'%(filename, i+1)</h4>
+<h4>recruitment_pattern outside [ai]</h4>
+<h4>%s highlight at start of multiline string requires manual fix.' % (filename, line, oldstyle)</h4>
+<h4>%s highlight in composite string requires manual fix.' % (filename, line, oldstyle)</h4>
+<h4>side number %s is out of sequence</h4>
+<h4>[side] without type attribute' % (filename, lineno)</h4>
+<h4>single textdomain declaration not on line 1.</h4>
+<h4>%s is not a known unit type' % (filename, rl, rtype)</h4>
+<h4>%s needs translation mark</h4>
+<h4>%s should not have a translation mark</h4>
+<h4>%s speaks in his/her death event' % (filename, nav.lineno+1, value)</h4>
+<h4>%s%s (%s) doesn\'t match the%s recruitment pattern (%s) for its side' % (filename, rl, rshow, rtype, utype, pshow, ", ".join(recruit_pattern))</h4>
+<h4>tag stack nonempty (%s) at end of file.' % (filename, lineno, tagstack)</h4>
+<h4>unbalanced [%s] closed with [/%s].' % (filename, lineno+1, tagstack[-1][0], tag)</h4>
+<h4>unit declaration without side attribute</h4>
+<h4>[unit] needs hand fixup to [unit_type]</h4>
+<h4>unknown \'%s\' referred to by id</h4>
+<h4>.user_description may need hand fixup</h4>
+<h4>one-line map.' % (filename, lineno)</h4>
+<h4>%s -> %s.' % (filename, lineno, line, newline)</h4>
+
+1.8
+<h4>campaign has no ID</h4>
+<h4>inserting %s' % (filename, i+1, `new_line`)</h4>
+<h4>unknown usage class %s</h4>
+
+1.10
+<h4>inserting %s' % (filename, i+1, repr(new_line))</h4>
+<h4>inserting "side=1"'%(filename, i+1)</h4>
+<h4>%s doesn`t need translation mark (translatable string is empty)</h4>
+<h4>%s has unkown base %s</h4>
+<h4>%s requires an ID attribute but has none</h4>
+<h4>%s requires "side" attribute but has none</h4>
+<h4>unresolved scenario reference %s</h4>
+</body>
+</html>
