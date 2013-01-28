@@ -1257,6 +1257,9 @@ def global_sanity_check(filename, lines):
             markcheck = False
         if "wmllint: markcheck on" in lines[i]:
             markcheck = True
+        # Update 1.4's {LOYAL_UNIT} macro to {NAMED_LOYAL_UNIT}, using a
+        # regular expression to distinguish it from the current {LOYAL_UNIT}.
+        lines[i] = re.sub(r'{(LOYAL_UNIT +[0-9]+ +(\([^)}]+\)|"[^"}]+"|[^("][^ }]+) +[0-9]+ +[0-9]+ +[^}]+ [^}]+})', r'{NAMED_\1', lines[i])
         # Auto-recognize the people in the {NAMED_*UNIT} macros.
         named = re.search('{NAMED_[A-Z_]*UNIT +[0-9]+ +(\([^)}]+\)|"[^"}]+"|[^("][^ }]+) +[0-9]+ +[0-9]+ +(\([^)}]+\)|"[^"}]+"|[^("][^ }]+) +[^}]+}', lines[i])
         if named:
