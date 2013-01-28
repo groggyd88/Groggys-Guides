@@ -1165,6 +1165,13 @@ def global_sanity_check(filename, lines):
     markcheck = True
     translation_mark = re.compile(r'_ *"')
     for i in range(len(lines)):
+        # Deal with a few Windows-specific problems for the sake of cross-
+        # platform harmony. First, the use of backslashes in file paths.
+        while re.search(r'\\[^ ={}"]*\.(png|ogg|wav|gif|jpe?g|map|cfg)', lines[i], flags=re.IGNORECASE):
+            backslash = re.search(r'(.*?)([^ ={}"]*\\[^ ={}"]*\.)(png|ogg|wav|gif|jpe?g|map|cfg)(.*)', lines[i], flags=re.IGNORECASE)
+            lines[i] = backslash.group(1) + backslash.group(2).replace("\\","/") + backslash.group(3) + backslash.group(4)
+            print '"%s", line %d: %s -> %s -- PATHS SHOULD USE THE FRONTSLASH (/)' \
+                  % (filename, i+1, backslash.group(2) + backslash.group(3), backslash.group(2).replace("\\","/") + backslash.group(3))
         if '[' in lines[i]:
             preamble_seen = True
         # This logic looks odd because a scenario can be conditionally
