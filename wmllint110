@@ -1257,6 +1257,10 @@ def global_sanity_check(filename, lines):
             markcheck = False
         if "wmllint: markcheck on" in lines[i]:
             markcheck = True
+        # Auto-recognize the people in the {NAMED_*UNIT} macros.
+        named = re.search('{NAMED_[A-Z_]*UNIT +[0-9]+ +(\([^)}]+\)|"[^"}]+"|[^("][^ }]+) +[0-9]+ +[0-9]+ +(\([^)}]+\)|"[^"}]+"|[^("][^ }]+) +[^}]+}', lines[i])
+        if named:
+            present.append(named.group(2).strip('"() '))
         m = re.search("# *wmllint: recognize +(.*)", lines[i])
         if m:
             present.append(string_strip(m.group(1)).strip())
