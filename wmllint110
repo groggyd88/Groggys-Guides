@@ -50,8 +50,8 @@
 # 6. Use either --clean to remove the -bak files or --revert to
 #    undo the conversion.
 #
-# Standalone terrain mask files *must* have a .mask extension on their name
-# or they'll have an incorrect usage=map generated into them.
+# If you would like wmllint to generate usage=mask instead of usage=map in your
+# mask files, you *must* name them with the .mask extension.
 #
 # Note: You can shut wmllint up about custom terrains by having a comment
 # on the same line that includes the string "wmllint: ignore" or
@@ -1744,9 +1744,10 @@ def translator(filename, mapxforms, textxform):
                 pass
             elif 'mask=' in line and not (refname.endswith("}") or refname.endswith(".mask")):
                 print \
-                      '"%s", line %d: fatal error, mask file without .mask extension (%s)' \
+                      '"%s", line %d: mask file without .mask extension - wmllint will generate usage=map instead of usage=mask in the file (%s)' \
                       % (filename, lineno+1, refname)
-                sys.exit(1)
+                # We are not exiting over the .mask extension issue anymore
+                #sys.exit(1)
         # Exclude map_data= lines that are just 1 line without
         # continuation, or which contain {}.  The former are
         # pathological and the parse won't handle them, the latter
