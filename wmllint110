@@ -496,8 +496,6 @@ linechanges = (
         ("portraits/nagas/fighter+female.png", "portraits/nagas/fighter.png"),
         # Changes after 1.8rc1
         ("portraits/orcs/warlord.png", "portraits/orcs/transparent/warlord.png"),
-        ("portraits/orcs/warlord2.png","portraits/orcs/transparent/warlord.png"),
-        ("portraits/orcs/warlord3.png","portraits/orcs/transparent/grunt-2.png"),
         ("portraits/orcs/warlord4.png","portraits/orcs/transparent/grunt-2.png"),
         ("portraits/orcs/warlord5.png","portraits/orcs/transparent/grunt-3.png"),
         # Changes just before 1.9.0
@@ -520,6 +518,9 @@ linechanges = (
         # Changes just before 1.9.2
         ("[removeitem]", "[remove_item]"),
         ("[/removeitem]", "[/remove_item]"),
+        # Changes during 1.9.x
+        ("portraits/orcs/warlord2.png","portraits/orcs/transparent/grunt-5.png"),
+        ("portraits/orcs/warlord3.png","portraits/orcs/transparent/grunt-6.png"),
         )
 
 def validate_on_pop(tagstack, closer, filename, lineno):
