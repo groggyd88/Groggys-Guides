@@ -630,7 +630,7 @@ notepairs = [
 
 
 # This needs to match the list of usage types in ai_python.cpp
-usage_types = ("scout", "fighter", "mixed fighter", "archer", "healer")
+usage_types = ["scout", "fighter", "mixed fighter", "archer", "healer"]
 
 # These are accumulated by sanity_check() and examined by consistency_check()
 unit_types = []
@@ -1040,6 +1040,11 @@ def global_sanity_check(filename, lines):
     recruitment_pattern = {}
     ifdef_stack = [None]
     for i in range(len(lines)):
+        # Magic comment for adding non-standard usage types
+        m = re.search('# *wmllint: usagetypes? +(.*)', lines[i])
+        if m:
+            for newusage in m.group(1).split(","):
+                usage_types.append(newusage.strip())
         if lines[i].startswith("#ifdef") or lines[i].startswith("#ifhave") or lines[i].startswith("#ifver"):
             ifdef_stack.append(lines[i].strip().split()[1])
             continue
