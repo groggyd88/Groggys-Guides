@@ -1172,6 +1172,8 @@ def global_sanity_check(filename, lines):
             lines[i] = backslash.group(1) + backslash.group(2).replace("\\","/") + backslash.group(3) + backslash.group(4)
             print '"%s", line %d: %s -> %s -- PATHS SHOULD USE THE FRONTSLASH (/)' \
                   % (filename, i+1, backslash.group(2) + backslash.group(3), backslash.group(2).replace("\\","/") + backslash.group(3))
+        # Then get rid of the 'userdata/' headache.
+        lines[i] = re.sub(r'(\.\./)?user(data/)?(data/[ac])', r'\3', lines[i])
         if '[' in lines[i]:
             preamble_seen = True
         # This logic looks odd because a scenario can be conditionally
