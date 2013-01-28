@@ -1270,25 +1270,14 @@ def global_sanity_check(filename, lines):
             recalled = re.search(r'{RECALL_OR_CREATE +(\([^)}]+\)|"[^"}]+"|[^("{][^ }]+) +(\([^)}]+\)|"[^"}]+"|[^("{][^ }]+) *}', lines[i])
             if recalled:
                 present.append(recalled.group(2).strip('"() '))
-                print '"%s", line %d: CODETESTROC %s || %s' % (filename, i+1, recalled.group(2).strip('"() '), recalled.string)
             else:
                 recalled = re.search(r'{RECALL(_UNIT)? +(\([^)}]+\)|"[^"}]+"|[^("{][^ }]+) *}', lines[i])
                 if recalled and recalled.group(2).strip('"() ') not in unit_types:
                     present.append(recalled.group(2).strip('"() '))
-                    print '"%s", line %d: CODETEST %s || %s' % (filename, i+1, recalled.group(2).strip('"() '), recalled.string)
                 else:
                     recalled = re.search(r'{[^ }]*RECALL[^ }]* +(\([^)}]+\)|"[^"}]+"|[^("{][^ }]+) +[0-9]+ +[0-9]+ *}', lines[i])
                     if recalled and recalled.group(1).strip('"() ') not in unit_types:
                         present.append(recalled.group(1).strip('"() '))
-                        print '"%s", line %d: CODETESTXNUM %s || %s' % (filename, i+1, recalled.group(1).strip('"() '), recalled.string)
-                    else:
-                        recalled = re.search(r'{[^ }]*RECALL[^ }]* +[0-9]+ +[0-9]+ +(\([^)}]+\)|"[^"}]+"|[^("{][^ }]+) *}', lines[i])
-                        if recalled:
-                            print '"%s", line %d: CODETESTNUMX %s || %s' % (filename, i+1, recalled.group(1).strip('"() '), recalled.string)
-                        else:
-                            recalled = re.search(r'{[^ }]*RECALL[^ }]* +(\([^)}]+\)|"[^"}]+"|[^("{][^ }]+) *}', lines[i])
-                            if recalled:
-                                print '"%s", line %d: CODETESTXX %s || %s' % (filename, i+1, recalled.group(1).strip('"() '), recalled.string)
         m = re.search("# *wmllint: recognize +(.*)", lines[i])
         if m:
             present.append(string_strip(m.group(1)).strip())
