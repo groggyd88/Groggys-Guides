@@ -1275,9 +1275,9 @@ def global_sanity_check(filename, lines):
                 if recalled and recalled.group(2).strip('"() ') not in unit_types:
                     present.append(recalled.group(2).strip('"() '))
                 else:
-                    recalled = re.search(r'{[^ }]*RECALL[^ }]* +(\([^)}]+\)|"[^"}]+"|[^("{][^ }]+) +[0-9]+ +[0-9]+ *}', lines[i])
-                    if recalled and recalled.group(1).strip('"() ') not in unit_types:
-                        present.append(recalled.group(1).strip('"() '))
+                    recalled = re.search(r'{RECALL(_?XY|_POS)? +(\([^)}]+\)|"[^"}]+"|[^("{][^ }]+) +[0-9]+ +[0-9]+ *}', lines[i])
+                    if recalled and recalled.group(2).strip('"() ') not in unit_types:
+                        present.append(recalled.group(2).strip('"() '))
         m = re.search("# *wmllint: recognize +(.*)", lines[i])
         if m:
             present.append(string_strip(m.group(1)).strip())
