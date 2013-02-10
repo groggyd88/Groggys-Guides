@@ -67,7 +67,8 @@
 # for example, if your scenario follows a continue so there are
 # characters present who were not explicitly recalled.  It may
 # also be useful if you have wrapped unit-creation or recall markup in macros
-# and wmllint cannot recognize it.
+# and wmllint cannot recognize it. (Note that this version of wmllint
+# auto-recognizes character IDs in several unit-creation and recall macros.)
 #
 # Similarly, it is possible to explicitly declare a unit's usage class
 # with a magic comment that looks like this:
@@ -75,6 +76,16 @@
 # Note that <unit> must be a string wrapped in ASCII doublequotes.  This
 # declaration will be useful if you are declaring units with macros that
 # include a substitutable formal in the unit name; there are examples in UtBS.
+#
+# If your recruitment patterns include any usage classes besides the standard
+# recruitable classes, you can tell wmllint about them with the magic comment
+# "wmllint: usagetype".  If you have more than one, this comment is
+# comma-separable, and can even be pluralized, for example:
+#    wmllint: usagetypes stonegazer, statue
+# This comment should be added in a file that wmllint checks before the
+# non-standard usage class appears in a scenario, preferably the _main.cfg.
+# (Adding it to the file of a unit generally won't work, because wmllint
+# checks the directory's /units subfolder after /scenarios, alphabetically.)
 #
 # You can disable stack-based malformation checks with a comment
 # containing "wmllint: validate-off" and re-enable with "wmllint: validate-on".
@@ -629,7 +640,10 @@ notepairs = [
     ]
 
 
-# This needs to match the list of usage types in ai_python.cpp
+# This is a list of the standard mainline recruitable usage types. (Two other
+# usage types sometimes used in mainline, null and transport, are not
+# normally recruitable.) It is appendable, so that content that includes
+# additional usage classes can use the magic comment, "#wmllint: usagetype".
 usage_types = ["scout", "fighter", "mixed fighter", "archer", "healer"]
 
 # These are accumulated by sanity_check() and examined by consistency_check()
