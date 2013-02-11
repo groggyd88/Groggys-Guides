@@ -641,9 +641,8 @@ notepairs = [
 
 
 # This is a list of the standard mainline recruitable usage types. (Two other
-# usage types sometimes used in mainline, null and transport, are not
-# normally recruitable.) It is appendable, so that content that includes
-# additional usage classes can use the magic comment, "#wmllint: usagetype".
+# usage types, null and transport, are not normally recruitable.) Additional
+# usage classes can be appended with the magic comment, "#wmllint: usagetype".
 usage_types = ["scout", "fighter", "mixed fighter", "archer", "healer"]
 
 # This is a list of mainline campaigns, used to convert UMC from
