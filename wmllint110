@@ -646,6 +646,27 @@ notepairs = [
 # additional usage classes can use the magic comment, "#wmllint: usagetype".
 usage_types = ["scout", "fighter", "mixed fighter", "archer", "healer"]
 
+# This is a list of mainline campaigns, used to convert UMC from
+# "data/campaigns" to "data/add-ons" while not clobbering mainline.
+mainline = ("An_Orcish_Incursion",
+            "Dead_Water",
+            "Delfadors_Memoirs",
+            "Descent_Into_Darkness",
+            "Eastern_Invasion",
+            "Heir_To_The_Throne",
+            "Legend_of_Wesmere",
+            "Liberty",
+            "Northern_Rebirth",
+            "Sceptre_of_Fire",
+            "Son_Of_The_Black_Eye",
+            "The_Hammer_of_Thursagan",
+            "The_Rise_Of_Wesnoth",
+            "The_South_Guard",
+            "tutorial",
+            "Two_Brothers",
+            "Under_the_Burning_Suns",
+            )
+
 # These are accumulated by sanity_check() and examined by consistency_check()
 unit_types = []
 derived_units = []
@@ -1656,8 +1677,8 @@ def hack_syntax(filename, lines):
             break
         if lines[i].startswith("#"):
             pass
-        # The trouble with this transformation is that it's only right for UMC;
-        # it clobbers mainline.
+        # This code has been superceded, but keeping it around in case wmllint
+        # ever wants to do anything with [textdomain] or [binary_path].
         if 0:
             if "[binary_path]" in lines[i]:
                 in_binary_path = True
@@ -1667,12 +1688,28 @@ def hack_syntax(filename, lines):
                 in_textdomain = True
             if "[/textdomain]" in lines[i]:
                 in_textdomain = False
-            if in_binary_path or in_textdomain:
-                lines[i] = re.sub(r"data/campaigns", r"data/add_ons", lines[i])
         # This is done on every line
         if "campaigns/" in lines[i]:
             lines[i] = lines[i].replace("{~campaigns/", "{~add-ons/")
             lines[i] = lines[i].replace("{@campaigns/", "{~add-ons/")
+            # Convert UMC to data/add-ons without clobbering mainline
+            cleanup_main = False
+            for camp in re.finditer("data/campaigns/([\w'-]+)", lines[i]):
+                campaign = camp.group(1)
+                if campaign not in mainline:
+                    # Considers the possibility that a line may have both UMC and mainline paths
+                    while re.search(r"data/campaigns/[\w'-]+", lines[i]):
+                        dc = re.search(r"(.*?data/)campaigns/([\w'-]+)(.*)", lines[i])
+                        if dc.group(2) not in mainline:
+                            lines[i] = dc.group(1) + 'add-ons/' + dc.group(2) + dc.group(3) + '\n'
+                            print '"%s", line %d: data/campaigns/%s -> data/add-ons/%s'\
+                            %(filename, i+1, dc.group(2), dc.group(2))
+                        else:
+                            lines[i] = dc.group(1) + 'xxmainlinexx/' + dc.group(2) + dc.group(3) + '\n'
+                            cleanup_main = True
+            # Converts back mainline paths in the case of mixed UMC/mainline lines
+            if cleanup_main:
+                lines[i] = lines[i].replace('xxmainlinexx/', 'campaigns/')
         elif "@add-ons/" in lines[i]:
             lines[i] = lines[i].replace("{@add-ons/", "{~add-ons/")
     # some tags do no longer support default side=1 attribute but may use [filter_side]
