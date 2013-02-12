@@ -5,16 +5,16 @@ This is a collection of my guides for Wesnoth. Some of these have been posted in
 
 It features:
 
-*List of Unported UMC
+* List of Unported UMC
 
-*UMC Timeline
+* UMC Timeline
 
-*Wolff Listings
+* Wolff Listings
+
+* wmllint++ for 1.10
 
 Also includes these drafts:
 
-*Guide to wmllint Errors
+* Guide to wmllint Errors
 
-*Porting UMC: Guide
-
-* wmllint++ for 1.10
+* Porting UMC: Guide
