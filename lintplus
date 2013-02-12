@@ -1,0 +1,135 @@
+I have been modding my wmllint, adding new features and changes that I consider improvements. However, a beefed-up wmllint is of limited use while it sits on only one person's computers. Although I am still working on further enhancements, I think it's time to make it downloadable for anybody else who could use a better wmllint. And so I introduce wmllint++ - wmllint improved!
+
+For those of you who remember the suggestions for wmllint development that I began offering a few months back, many of these features should sound familiar. However, that thread included ideas that I did not know how to implement (at least at the time). In the meantime, I've been looking up Python documentation (particularly about regular expressions) to expand my own capabilities. I also assumed that even if any of my ideas were ever adopted, they would probably only be added to the development branch. wmllint++, on the other hand, works on 1.10.
+
+I've also been making a few more modest improvements to wmllint 1.4, which is still used to help convert UMC from 1.0 and 1.2, because support for early WML was dropped from later versions.
+
+So just what are these purported "improvements?"
+
+1 Various spelling corrections
+
+I'd fixed a couple of typos that I noticed, then decided to run a spellcheck.
+
+2 Auto-recognize units created by the {NAMED_*UNIT} macros
+
+I actually accompanied this suggestion with a bit of clumsy code, but in wmllint++ I've streamlined that original code.
+
+The "unknown 'XXX' referred to by id" message ought to be a valuable message alerting designers to misspelled names, or characters that they forgot to create or recall. Unfortunately, it doesn't recognize units created or recalled by macros, and may be the wmllint message most prone to high false positives.
+
+wmllint allows you to add a magic comment telling it to recognize an id, but having to do more work defeats the purpose of using a macro in the first place.
+
+wmllint++ uses a regular expression to determine the id string field, and append its contents to the list of people that wmllint recognizes as present. This may save not just a "recognize" magic comment, but a spelling magic comment, since wmllint adds "present" to the dictionary.
+
+This code seems to be working with no false positives. It does assume that the id string is more than one character long, so theoretically if an author used a single letter or number as the id, it would not get picked up. In fact, two campaigns sometimes use blank fields for id and name - they should probably be using the non-NAMED macros. One of these campaigns creates some characters, then uses {NAMED_* for these characters in subsequent scenarios with the unit type field in unfilled quotes - presumably looking for a recall effect. I don't know if this is working WML or not, but it fails the regex for the first field. I could change '+' to '*' in the regex to catch these, but for now I'll leave it as it is.
+
+Also, if some UMC used its own {NAMED_*UNIT} macro that didn't follow the format of the core macros, it could give a wrong result.
+
+3 Auto-recognize units recalled by various {*RECALL*} macros
+
+I adopted the same approach to auto-recognize characters recalled by macros. This is trickier, due to the surprising dearth of core recall macros. It may also be more controversial, as some may question whether wmllint should be interpreting unofficial, non-core macros.
+
+One use case is straightforward. {RECALL_OR_CREATE} used to be an official macro, so it follows a set pattern amenable to regex.
+
+Then there is the case of the basic recall macro that simply recalls a character by id. Although it may not be official, I found that UMC overwhelmingly used the obvious name: {RECALL}.
+
+Were there any other macro names for this basic recall function? I found that one old campaign, On Crimson Wings, used RECALL_UNIT. Checking, I found that another abandoned campaign, 1.5's attempted HttH Multiplayer, also had a macro by that name, but it was different. It recalled a unit type, though the macro would fail the regex, since it had a second field for a number.
+
+I decided to also cover Wings in my regex, even though it's just one campaign. I did tell wmllint++ to not append the result to "present" if it was in "unit_types", as a precaution against anyone using those macro names to recall by unit type instead of by id.
+
+Personally, I think {RECALL} should be added to the core macros. It's fairly widespread, it's the de facto standard name, and I'm actually astonished that it isn't one already.
+
+Another obvious macro function would be to recall a unit, with specific coordinates. I figured that if a macro had RECALL in its name, three fields, and numbers for its last two fields, the first field would probably be an id string. This regex did have a false positive in mainline: Hammer of Thursagan's {RECALL_VETERAN} recalled a unit type rather than an id. So I excluded the string from present.append if it was in unit_types.
+
+But I found that there was still a false positive: Story of Wose's {RECALLR} recalled a role, not an id. One false positive might be considered acceptable. Looking further, however, I saw that despite the lack of uniformity, just three names were in use for this macro function: {RECALLXY}, {RECALL_XY}, and {RECALL_POS}. So I decided to convert from a general rule to a regex that covered those three specific cases.
+
+Again, I think this is a macro that should be folded into core. It is common, and making it core would standardize the name and prevent any other names from proliferating.
+
+Theoretically, there could be a macro where the coordinates came before the id, but I found that all of the macros that fit the pattern (of two number fields followed by a final field) were actually red herrings. I also found that all macros that didn't start with RECALL (e.g., PUT_TO_RECALL_LIST) were unsuitable.
+
+Right now, the code seems to have no false positives. Perhaps the regexes could be tightened to exclude "$" (indicating a variable rather than an id) and "=".
+
+4 Update 1.4's {LOYAL_UNIT} macro to {NAMED_LOYAL_UNIT}
+
+wmllint doesn't transition 1.4's {LOYAL_UNIT} to {NAMED_LOYAL_UNIT}, probably because the name went to a new macro. However, a regular expression can be used to make a safe substitution. The current {LOYAL_UNIT} ends after the x,y coordinates, so if there are two more blocks of text afterwards, it must be the old macro.
+
+When I report the substitution to stdout, I add a little message, to prevent anyone from getting the idea that they should change all {LOYAL_UNIT}s to NAMED_.
+
+5 Tweak the "dying words" error message for clarity
+
+I know that the first time I ran wmllint, my reaction to the "death event" message was puzzlement. Plenty of characters in mainline speak last words when they croak, so why is wmllint complaining? So I simply ignored it.
+
+My text is a little more verbose, but hopefully clearer in pointing out what the problem and the solution is. This is a common error in UMC, and this could in part be because the current message isn't working. (On the other hand, perhaps these designers simply aren't using wmllint.)
+
+One downside could be that my version leads UMC authors with complex death events to simply convert to "last breath", instead of splitting them into separate "last breath" and "die" events. But those events aren't being split now.
+
+6 Drop the .mask extension exit
+
+This code is identical to what I presented in my proposals thread.
+
+Basically, the Wesnoth engine seems happy to use any file called up by a mask= key, whether or not it ends in .mask or has a 'usage="mask"' attribute. So I consider it excessive to turn this into a wmllint "fatal error" - probably the largest single source of wmllint crashes today. Thus, I comment out the sys.exit.
+
+On the other hand, some people may actually care that their file has the "proper" ending and attribute. For them, I leave a softened version of the introduction's explanation and stdout message.
+
+7 Fix a rare wmllint-crashing map_data bug
+
+This is the same fix from my proposals topic, except that I deleted an extra space two lines down.
+
+wmllint crashes if the value for the map_data key consists of unfilled quotation marks (""). Only Invasion of Arendia is known to have this bug. The last two scenarios are unfinished, with just some bare-bones starter code meant to be filled in later.
+
+8 Convert backslashes in file paths to frontslashes
+
+Some designers, out of ignorance or habit, use backslashes in their paths. However, backslashes can't be replaced indiscriminately, because they're in use as escapes (or bridge terrain).
+
+My regex looks for backslashes in a string that ends with a file type. As a practical matter, EVERY instance in the wild seems to involve png, except for one comment in 1.2's Adventure_of_Soul_Keeper.cfg referring to a .mo file - which ironically is not one of the covered file types. Still, I included several common file types.
+
+Besides reporting the substitution to stdout, I warn in ALL CAPS against backslashes. Some people may think it's too much.
+
+This code does not cover directory paths - those that don't end with a file. However, I've only run across one example ("{~campaigns\A_Tale_of_Life_and_Death\scenarios}"), so it's probably not worth trying to hunt down with wmllint.
+
+9 Strip userdata/ from paths
+
+This was one of my suggested ideas, but I didn't know how to accomplish it with Python.
+
+The misguided authors who put userdata/ in their paths cause problems not just for non-Windows users, but fellow Windows users who chose to put userdata in My Games. wmllint++ removes this mistake.
+
+Of course, YOU know better than to add userdata/ to paths, right? If you're porting, however, you may run into this fairly common mistake of inexperienced UMC authors.
+
+My regex is solicitous towards a set of add-ons in 1.4 that use "userdata/campaigns" instead of "userdata/data/campaigns" in their paths. The stdout includes another all-caps admonition against "userdata/".
+
+10 Add new 1.10 portraits to the mix of orc warlord portrait replacements
+
+This is basically the same as my earlier proposal, though the code has been rearranged a bit.
+
+Wesnoth transitioned in 1.8 from the five old-style orcish warlord portraits, but there were only three available replacements, requiring two to be doubled up.
+
+wmllint++ adds two of the three new 1.10 orc portraits to the replacements, adding more variety to the portraits used for orcish leaders. Although this mod is too late for the mainline campaigns and other campaigns already converted, there are many unported earlier campaigns.
+
+This is one way wmllint could be modified, reflecting my partiality for the grunt-5 and grunt-6 portraits. You could change the particular portraits (and their order) based on your own taste.
+
+11 Restore the usage class check, while creating a magic comment for non-standard classes
+
+The "unknown usage class" message got removed during 1.9. The rationale (offered by ai0867) was, "Don't make wmllint check if the usage type matches a standard one. Non-standard ones work just fine".
+
+I disagree with this decision. Custom usage classes are relatively rare, while the check caught real errors: typos, bogus classes, using unit types instead of usage types. Other wmllint checks have higher rates of false positives.
+
+How then to deal with non-standard usage classes? After restoring the check, I made the list of usage types appendable, and created a magic comment, "wmllint: usagetype", for specifying new classes. This comment is comma-separable, and usagetype can even be pluralized. Unleash the stonegazers!
+
+12 Convert old UMC paths from data/campaigns to data/add-ons
+
+This is one of the features I requested from the developers, now I've implemented it myself!
+
+The reason this feature hasn't been activated before is that it would "clobber mainline" campaigns, which still use the data/campaigns path. However, I was able to make wmllint++ update UMC paths, while still being safe for mainline.
+
+First, I defined a list of mainline campaigns. When wmllint++ encounters a line with a data/campaigns/ path, it checks all iterations against the list of mainline campaigns. Only if there is a non-match does wmllint convert the line.
+
+This code is a little bit more elaborate than it might otherwise be, because I want wmllint++ to be able to accurately handle a hypothetical case where a line contains both a UMC and a mainline path, even though I don't know of any actual example in the wild. So the conversion tests each "data/campaigns/<name>" instance, then changes any mainline strings so the while statement can proceed. If there were any mixed lines, the altered mainline string is changed back to "data/campaigns/".
+
+13 Backport a couple of bugfixes from trunk
+
+For the most part, I haven't sifted through the changes in trunk, to see which are related to WML changes in 1.11 and which might be useful backports. However, I spotted two bugfixes that carry back to 1.10.
+
+r55044 by ai0867: Don't strip underscores from keys when trying to remove a translation mark
+
+
+
+r55045 by anonymissimus: fix # wmllint: deathcheck off directive being ignored in some cases
