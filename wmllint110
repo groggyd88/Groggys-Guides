@@ -1295,30 +1295,31 @@ def global_sanity_check(filename, lines):
             markcheck = False
         if "wmllint: markcheck on" in lines[i]:
             markcheck = True
-        # Update 1.4's {LOYAL_UNIT} macro to {NAMED_LOYAL_UNIT}, using a
-        # regular expression to distinguish it from the current {LOYAL_UNIT}.
-        if re.search(r'^[^#]*{LOYAL_UNIT +[0-9]+ +(\([^)}]+\)|"[^"}]+"|[^("][^ }]+) +([0-9]+|[^ ]*\$[^ ]*x[^ ]*) +([0-9]+|[^ ]*\$[^ ]*y[^ ]*) +[^}]+ [^}]+}', lines[i]):
-            lines[i] = lines[i].replace("{LOYAL_UNIT ", "{NAMED_LOYAL_UNIT ")
-            print '"%s", line %d: {LOYAL_UNIT -> {NAMED_LOYAL_UNIT -- 1.4 version of LOYAL_UNIT' \
-                  % (filename, i+1)
-        # Auto-recognize the people in the {NAMED_*UNIT} macros.
-        named = re.search('{NAMED_[A-Z_]*UNIT +[0-9]+ +(\([^)}]+\)|"[^"}]+"|[^("][^ }]+) +([0-9]+|[^ ]*\$[^ ]*x[^ ]*) +([0-9]+|[^ ]*\$[^ ]*y[^ ]*) +(\([^)}]+\)|"[^"}]+"|[^("][^ }]+) +[^}]+}', lines[i])
-        if named:
-            present.append(named.group(4).strip('"() '))
-        # Auto-recognize people in {*RECALL*} macros. Caution is necessary due
-        # to the lack of official recall macros.
-        if re.search('^[^#]*{[^ ]*RECALL', lines[i]):
-            recalled = re.search(r'{RECALL_OR_CREATE +(\([^)}]+\)|"[^"}]+"|[^("{][^ }]+) +(\([^)}]+\)|"[^"}]+"|[^("{][^ }]+) *}', lines[i])
-            if recalled:
-                present.append(recalled.group(2).strip('"() '))
-            else:
-                recalled = re.search(r'{RECALL(_UNIT)? +(\([^)}]+\)|"[^"}]+"|[^("{][^ }]+) *}', lines[i])
-                if recalled and recalled.group(2).strip('"() ') not in unit_types:
+        if re.search(r'^[^#]*{.*}', lines[i]):
+            # Update 1.4's {LOYAL_UNIT} macro to {NAMED_LOYAL_UNIT}, using a
+            # regular expression to distinguish it from the current {LOYAL_UNIT}.
+            if re.search(r'^[^#]*{LOYAL_UNIT +[0-9]+ +(\([^)}]*\)|"[^"}]*"|[^(" ][^ }]*) +([0-9]+|[^ ]*\$[^ ]*x[^ ]*) +([0-9]+|[^ ]*\$[^ ]*y[^ ]*) +[^} ]+ [^}]+}', lines[i]):
+                lines[i] = lines[i].replace("{LOYAL_UNIT ", "{NAMED_LOYAL_UNIT ")
+                print '"%s", line %d: {LOYAL_UNIT -> {NAMED_LOYAL_UNIT -- 1.4 version of LOYAL_UNIT' \
+                      % (filename, i+1)
+            # Auto-recognize the people in the {NAMED_*UNIT} macros.
+            named = re.search(r'^[^#]*{NAMED_[A-Z_]*UNIT +[0-9]+ +(\([^)}]*\)|"[^"}]*"|[^(" ][^ }]*) +([0-9]+|[^ ]*\$[^ ]*x[^ ]*) +([0-9]+|[^ ]*\$[^ ]*y[^ ]*) +(\([^)}]+\)|"[^"}]+"|[^(" ][^ }]*) +[^}]+}', lines[i])
+            if named and re.search(r'[^"()\s]', named.group(4)):
+                present.append(named.group(4).strip('"() '))
+            # Auto-recognize people in {RECALL*} macros. Caution is necessary due
+            # to the lack of official recall macros.
+            elif re.search('^[^#]*{RECALL', lines[i]):
+                recalled = re.search(r'{RECALL_OR_CREATE +(\([^)}]+\)|"[^"}]+"|[^("{][^ }]+) +(\([^)}]+\)|"[^"}]+"|[^(" ][^ }]*) *}', lines[i])
+                if recalled and re.search(r'[^"()\s]', recalled.group(2)):
                     present.append(recalled.group(2).strip('"() '))
                 else:
-                    recalled = re.search(r'{RECALL(_?XY|_POS)? +(\([^)}]+\)|"[^"}]+"|[^("{][^ }]+) +([0-9]+|[^ ]*\$[^ ]*x[^ ]*) +([0-9]+|[^ ]*\$[^ ]*y[^ ]*) *}', lines[i])
-                    if recalled and recalled.group(2).strip('"() ') not in unit_types:
+                    recalled = re.search(r'{RECALL(_UNIT)? +(\([^)}]+\)|"[^"}]+"|[^(" ][^ }]*) *}', lines[i])
+                    if recalled and re.search(r'[^"()\s]', recalled.group(2)) and recalled.group(2).strip('"() ') not in unit_types:
                         present.append(recalled.group(2).strip('"() '))
+                    else:
+                        recalled = re.search(r'{RECALL(_?XY|_POS)? +(\([^)}]+\)|"[^"}]+"|[^(" ][^ }]*) +([0-9]+|[^ ]*\$[^ ]*x[^ ]*) +([0-9]+|[^ ]*\$[^ ]*y[^ ]*) *}', lines[i])
+                        if recalled and re.search(r'[^"()\s]', recalled.group(2)) and recalled.group(2).strip('"() ') not in unit_types:
+                            present.append(recalled.group(2).strip('"() '))
         m = re.search("# *wmllint: recognize +(.*)", lines[i])
         if m:
             present.append(string_strip(m.group(1)).strip())
