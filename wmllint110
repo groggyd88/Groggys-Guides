@@ -1679,17 +1679,6 @@ def hack_syntax(filename, lines):
             break
         if lines[i].startswith("#"):
             pass
-        # This code has been superceded, but keeping it around in case wmllint
-        # ever wants to do anything with [textdomain] or [binary_path].
-        if 0:
-            if "[binary_path]" in lines[i]:
-                in_binary_path = True
-            if "[/binary_path]" in lines[i]:
-                in_binary_path = False
-            if "[textdomain]" in lines[i]:
-                in_textdomain = True
-            if "[/textdomain]" in lines[i]:
-                in_textdomain = False
         # This is done on every line
         if "campaigns/" in lines[i]:
             lines[i] = lines[i].replace("{~campaigns/", "{~add-ons/")
@@ -1715,6 +1704,20 @@ def hack_syntax(filename, lines):
                 lines[i] = lines[i].replace('xxmainlinexx/', 'campaigns/')
         elif "@add-ons/" in lines[i]:
             lines[i] = lines[i].replace("{@add-ons/", "{~add-ons/")
+        # Occasionally authors try to use '~' with [textdomain] or [binary_path].
+        if "[binary_path]" in lines[i]:
+            in_binary_path = True
+        if "[/binary_path]" in lines[i]:
+            in_binary_path = False
+        if "[textdomain]" in lines[i]:
+            in_textdomain = True
+        if "[/textdomain]" in lines[i]:
+            in_textdomain = False
+        if in_binary_path or in_textdomain:
+            if '~' in lines[i]:
+                lines[i] = re.sub('~/?(data/)?add-ons/', 'data/add-ons/', lines[i])
+                print '"%s", line %d: [textdomain] and [binary_path] paths do not use "~" for userdata, replacing'\
+                % (filename, i+1)
     # some tags do no longer support default side=1 attribute but may use [filter_side]
     # with a SSF instead
     # (since 1.9.5, 1.9.6)
