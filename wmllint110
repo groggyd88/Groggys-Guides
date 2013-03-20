@@ -66,9 +66,8 @@
 # who should be recognized in descriptions.  This will be useful,
 # for example, if your scenario follows a continue so there are
 # characters present who were not explicitly recalled.  It may
-# also be useful if you have wrapped unit-creation or recall markup in macros
-# and wmllint cannot recognize it. (Note that this version of wmllint
-# auto-recognizes character IDs in several unit-creation and recall macros.)
+# also be useful if you have wrapped unit-creation or recall markup in
+# non-core macros and wmllint cannot recognize it.
 #
 # Similarly, it is possible to explicitly declare a unit's usage class
 # with a magic comment that looks like this:
@@ -507,7 +506,9 @@ linechanges = (
         ("portraits/nagas/fighter+female.png", "portraits/nagas/fighter.png"),
         # Changes after 1.8rc1
         ("portraits/orcs/warlord.png", "portraits/orcs/transparent/warlord.png"),
-        ("portraits/orcs/warlord4.png","portraits/orcs/transparent/grunt-2.png"),
+        #("portraits/orcs/warlord2.png","portraits/orcs/transparent/warlord.png"), # see 1.11.3
+        ("portraits/orcs/warlord3.png","portraits/orcs/transparent/grunt-2.png"),
+        #("portraits/orcs/warlord4.png","portraits/orcs/transparent/grunt-2.png"), # see 1.11.3
         ("portraits/orcs/warlord5.png","portraits/orcs/transparent/grunt-3.png"),
         # Changes just before 1.9.0
         ("flat/grass-r8", "flat/grass6"),
@@ -529,9 +530,9 @@ linechanges = (
         # Changes just before 1.9.2
         ("[removeitem]", "[remove_item]"),
         ("[/removeitem]", "[/remove_item]"),
-        # Changes during 1.9.x
+        # Changed before 1.11.3 to incorporate 1.9.0 portraits
         ("portraits/orcs/warlord2.png","portraits/orcs/transparent/grunt-5.png"),
-        ("portraits/orcs/warlord3.png","portraits/orcs/transparent/grunt-6.png"),
+        ("portraits/orcs/warlord4.png","portraits/orcs/transparent/grunt-6.png"),
         )
 
 def validate_on_pop(tagstack, closer, filename, lineno):
@@ -1205,14 +1206,14 @@ def global_sanity_check(filename, lines):
             while re.search(r'^[^#]*\\[^ ={}"]*\.(png|ogg|wav|gif|jpe?g|map|mask|cfg)\b', lines[i], flags=re.IGNORECASE):
                 backslash = re.search(r'(.*?)([^ ={}"]*\\[^ ={}"]*\.)(png|ogg|wav|gif|jpe?g|map|mask|cfg)(\b.*)', lines[i], flags=re.IGNORECASE)
                 lines[i] = backslash.group(1) + backslash.group(2).replace("\\","/") + backslash.group(3) + backslash.group(4) + '\n'
-                print '"%s", line %d: %s -> %s -- PATHS SHOULD USE THE FRONTSLASH (/)' \
+                print '"%s", line %d: %s -> %s -- please use frontslash (/) for cross-platform compatibility' \
                       % (filename, i+1, backslash.group(2) + backslash.group(3), backslash.group(2).replace("\\","/") + backslash.group(3))
         # Then get rid of the 'userdata/' headache.
         if 'userdata/' in lines[i]:
             while re.search(r'^[^#]*user(data/)?data/[ac]', lines[i]):
                 userdata = re.search(r'(.*?)((\.\./)?user(data/)?)(data/[ac][^/]*/?)(.*)', lines[i])
                 lines[i] = userdata.group(1) + userdata.group(5) + userdata.group(6) + '\n'
-                print '"%s", line %d: %s -> %s -- DO NOT PREFIX PATHS WITH userdata/' \
+                print '"%s", line %d: %s -> %s -- DO NOT PREFIX PATHS WITH "userdata/"' \
                       % (filename, i+1, userdata.group(2) + userdata.group(5), userdata.group(5))
         if '[' in lines[i]:
             preamble_seen = True
@@ -1297,15 +1298,15 @@ def global_sanity_check(filename, lines):
             markcheck = False
         if "wmllint: markcheck on" in lines[i]:
             markcheck = True
-        if re.search(r'^[^#]*{.*}', lines[i]):
+        if re.search(r'^[^#]*{', lines[i]):
             # Update 1.4's {LOYAL_UNIT} macro to {NAMED_LOYAL_UNIT}, using a
             # regular expression to distinguish it from the current {LOYAL_UNIT}.
-            if re.search(r'^[^#]*{LOYAL_UNIT +[0-9]+ +(\([^)}]*\)|"[^"}]*"|[^(" ][^ }]*) +([0-9]+|[^ ]*\$[^ ]*x[^ ]*) +([0-9]+|[^ ]*\$[^ ]*y[^ ]*) +[^} ]+ [^}]+}', lines[i]):
+            if re.search(r'^[^#]*{LOYAL_UNIT +[0-9]+ +(\([^)}]*\)|"[^"}]*"|[^(" ][^ }]*) +([0-9]+|[^ ]*\$[^ ]*x[^ ]*) +([0-9]+|[^ ]*\$[^ ]*y[^ ]*) +[^} ]+ +[^} ][^}]*}', lines[i]):
                 lines[i] = lines[i].replace("{LOYAL_UNIT ", "{NAMED_LOYAL_UNIT ")
                 print '"%s", line %d: {LOYAL_UNIT -> {NAMED_LOYAL_UNIT -- 1.4 version of LOYAL_UNIT' \
                       % (filename, i+1)
             # Auto-recognize the people in the {NAMED_*UNIT} macros.
-            named = re.search(r'^[^#]*{NAMED_[A-Z_]*UNIT +[0-9]+ +(\([^)}]*\)|"[^"}]*"|[^(" ][^ }]*) +([0-9]+|[^ ]*\$[^ ]*x[^ ]*) +([0-9]+|[^ ]*\$[^ ]*y[^ ]*) +(\([^)}]+\)|"[^"}]+"|[^(" ][^ }]*) +[^}]+}', lines[i])
+            named = re.search(r'^[^#]*{NAMED_[A-Z_]*UNIT +[0-9]+ +(\([^)}]*\)|"[^"}]*"|[^(" ][^ }]*) +([0-9]+|[^ ]*\$[^ ]*x[^ ]*) +([0-9]+|[^ ]*\$[^ ]*y[^ ]*) +(\([^)}]+\)|"[^"}]+"|[^(" ][^ }]*) +[^} ][^}]*', lines[i])
             if named and re.search(r'[^"()\s]', named.group(4)):
                 present.append(named.group(4).strip('"() '))
             # Auto-recognize people in {RECALL*} macros. Caution is necessary due
@@ -1684,14 +1685,18 @@ def hack_syntax(filename, lines):
             lines[i] = lines[i].replace("{~campaigns/", "{~add-ons/")
             lines[i] = lines[i].replace("{~/campaigns/", "{~add-ons/")
             lines[i] = lines[i].replace("{@campaigns/", "{~add-ons/")
-            # Convert UMC to data/add-ons without clobbering mainline
+            # Convert UMC to data/add-ons without clobbering mainline. This code
+            # is a bit more elaborate than it probably needs to be, to ensure
+            # that it deals correctly with a hypothetical case where a line
+            # contains both a UMC path and a mainline path.
             cleanup_main = False
-            for camp in re.finditer("data/campaigns/([\w'-]+)", lines[i]):
+            for camp in re.finditer("data/campaigns/([\w'&+-]+)", lines[i]):
                 campaign = camp.group(1)
                 if campaign not in mainline:
-                    # Considers the possibility that a line may have both UMC and mainline paths
-                    while re.search(r"data/campaigns/[\w'-]+", lines[i]):
-                        dc = re.search(r"(.*?data/)campaigns/([\w'-]+)(.*)", lines[i])
+                    # Checks each path again to make sure it is UMC; mainline path
+                    # strings are altered so the 'while' test can proceed
+                    while re.search(r"data/campaigns/[\w'&+-]+", lines[i]):
+                        dc = re.search(r"(.*?data/)campaigns/([\w'&+-]+)(.*)", lines[i])
                         if dc.group(2) not in mainline:
                             lines[i] = dc.group(1) + 'add-ons/' + dc.group(2) + dc.group(3) + '\n'
                             print '"%s", line %d: data/campaigns/%s -> data/add-ons/%s'\
@@ -1715,7 +1720,7 @@ def hack_syntax(filename, lines):
             in_textdomain = False
         if in_binary_path or in_textdomain:
             if '~' in lines[i]:
-                lines[i] = re.sub('~/?(data/)?add-ons/', 'data/add-ons/', lines[i])
+                lines[i] = re.sub('(^[^#]*path) *= *([^#]{0,5})~/?(data/)?add-ons/', r'\1=\2data/add-ons/', lines[i])
                 print '"%s", line %d: [textdomain] and [binary_path] paths do not use "~" for userdata, replacing'\
                 % (filename, i+1)
     # some tags do no longer support default side=1 attribute but may use [filter_side]
