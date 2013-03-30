@@ -662,6 +662,27 @@ notepairs = [
 # usage classes can be appended with the magic comment, "#wmllint: usagetype".
 usage_types = ["scout", "fighter", "mixed fighter", "archer", "healer"]
 
+# This is a list of mainline campaigns, used to convert UMC from
+# "data/campaigns" to "data/add-ons" while not clobbering mainline.
+mainline = ("An_Orcish_Incursion",
+            "Dead_Water",
+            "Delfadors_Memoirs",
+            "Descent_Into_Darkness",
+            "Eastern_Invasion",
+            "Heir_To_The_Throne",
+            "Legend_of_Wesmere",
+            "Liberty",
+            "Northern_Rebirth",
+            "Sceptre_of_Fire",
+            "Son_Of_The_Black_Eye",
+            "The_Hammer_of_Thursagan",
+            "The_Rise_Of_Wesnoth",
+            "The_South_Guard",
+            "tutorial",
+            "Two_Brothers",
+            "Under_the_Burning_Suns",
+            )
+
 # These are accumulated by sanity_check() and examined by consistency_check()
 unit_types = []
 derived_units = []
@@ -1704,6 +1725,28 @@ def hack_syntax(filename, lines):
             lines[i] = lines[i].replace("{~campaigns/", "{~add-ons/")
             lines[i] = lines[i].replace("{~/campaigns/", "{~add-ons/")
             lines[i] = lines[i].replace("{@campaigns/", "{~add-ons/")
+            # Convert UMC to data/add-ons without clobbering mainline. To ensure
+            # that it deals correctly with a hypothetical case where a line
+            # contains both a UMC path and a mainline path, each path is checked
+            # against a list of mainline campaigns. UMC paths are updated to
+            # "data/add-ons/"; mainline path strings are altered so the 'while'
+            # test can proceed, while being flagged for cleanup.
+            cleanup_main = False
+            while re.search(r"data/campaigns/\w", lines[i]):
+                dc = re.search(r"data/campaigns/(\w[\w'&+-]*)", lines[i])
+                if dc.group(1) not in mainline:
+                    lines[i] = lines[i][:dc.start()] + 'data/add-ons/' + dc.group(1) + lines[i][dc.end():]
+                    print '"%s", line %d: data/campaigns/%s -> data/add-ons/%s'\
+                          %(filename, i+1, dc.group(1), dc.group(1))
+                else:
+                    lines[i] = lines[i][:dc.start()] + 'data/xxmainlinexx/' + dc.group(1) + lines[i][dc.end():]
+                    cleanup_main = True
+            # Converts mainline paths back to "data/campaigns/". Because wmllint
+            # only writes out if there is a changed line after all operations,
+            # no cfg-bak files are created in mainline campaigns as a result of
+            # the preceding alteration.
+            if cleanup_main:
+                lines[i] = lines[i].replace('data/xxmainlinexx/', 'data/campaigns/')
         elif "@add-ons/" in lines[i]:
             lines[i] = lines[i].replace("{@add-ons/", "{~add-ons/")
     # More syntax transformations would go here.
