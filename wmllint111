@@ -1752,6 +1752,11 @@ def hack_syntax(filename, lines):
                     lines[i] = tilde.group(1) + '=' + tilde.group(2) + 'data/add-ons' + lines[i][tilde.end():]
                     print '"%s", line %d: %s -> data/add-ons -- [textdomain] and [binary_path] paths do not accept "~" for userdata'\
                           % (filename, i+1, tilde.group(3))
+        # Check directories in textdomain and binary paths
+        if in_textdomain and 'path=' in lines[i] and '/translations' not in lines[i]:
+            print '"%s", line %d: no reference to "/translations" directory in textdomain path' % (filename, i+1)
+        if in_binary_path and 'path=' in lines[i] and re.search('/external|/public', lines[i]):
+            print '"%s", line %d: "/external" or "/public" image directories should no longer be used' % (filename, i+1)
     # More syntax transformations would go here.
     return lines
 
